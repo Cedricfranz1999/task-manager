@@ -1,0 +1,46 @@
+generator client {
+    provider = "prisma-client-js"
+}
+
+datasource db {
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
+    directUrl = env("DIRECT_URL")
+}
+
+// Define the Category enum
+
+
+model Post {
+    id        Int      @id @default(autoincrement())
+    name      String
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@index([name])
+}
+
+model Task {
+    id            Int      @id @default(autoincrement())
+    taskname      String
+    Description   String?
+    Date          DateTime?
+    startDuration DateTime
+    endDuration   DateTime
+    status        Boolean  @default(false)
+    subtasks      SubTask[] 
+    category      Category  @default(education)
+}
+
+model SubTask {
+    id          Int      @id @default(autoincrement())
+    subtaskName String
+    taskId      Int?
+    task        Task?    @relation(fields: [taskId], references: [id])
+    status      Boolean @default(false)
+}
+
+enum Category {
+    education
+    work
+}
