@@ -1,7 +1,7 @@
 "use client";
 import { api } from "@/trpc/react";
 import React, { useState } from "react";
-import { format, parseISO } from "date-fns";
+import { format } from "date-fns";
 import dayjs from "dayjs";
 import isoWeek from "dayjs/plugin/isoWeek";
 import { Button } from "@/components/ui/button";
@@ -112,10 +112,7 @@ export default function Component() {
     return <div>Loading...</div>;
   }
 
-  const formatTime = (isoTime: string) => {
-    const date = parseISO(isoTime);
-    return format(date, "h:mm a");
-  };
+  const formatTime = (isoTime: string) => format(new Date(isoTime), "hh:mm a");
 
   const tasks: Task[] = data.map((task: any) => ({
     id: task.id.toString(),
@@ -163,7 +160,8 @@ export default function Component() {
 
   const onSubmit = async (data: TaskFormData) => {
     console.log(data);
-
+    // Here you would typically send the data to your API
+    // For example: await api.Task.addTask.mutate(data);
     await refetch();
     setOpen(false);
   };
