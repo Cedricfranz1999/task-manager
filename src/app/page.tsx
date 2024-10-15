@@ -181,15 +181,12 @@ export default function Component() {
   };
 
   const onSubmit = async (data: TaskFormData) => {
-    // Combine date and time for start and end durations
     const startDateTime = `${data.date}T${data.timeStart}:00.000Z`;
     const endDateTime = `${data.date}T${data.timeEnd}:00.000Z`;
 
-    // Create Date objects for start and end durations
     const startDuration = new Date(startDateTime);
     const endDuration = new Date(endDateTime);
 
-    // Subtract hours (e.g., subtract 2 hours)
     const hoursToSubtract = 8; // Change this to the number of hours you want to subtract
     startDuration.setHours(startDuration.getHours() - hoursToSubtract);
     endDuration.setHours(endDuration.getHours() - hoursToSubtract);
@@ -201,6 +198,7 @@ export default function Component() {
       startDuration: startDuration,
       endDuration: endDuration,
       category: data.category,
+      subtask: data.subtasks,
     });
 
     setOpen(false);
