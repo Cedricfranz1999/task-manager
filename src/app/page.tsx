@@ -1,7 +1,7 @@
 "use client";
 import { api } from "@/trpc/react";
 import React, { useState } from "react";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import dayjs from "dayjs";
 import isoWeek from "dayjs/plugin/isoWeek";
 import { Button } from "@/components/ui/button";
@@ -25,6 +25,7 @@ import {
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useForm, useFieldArray } from "react-hook-form";
 import { X } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 dayjs.extend(isoWeek);
 type Task = {
@@ -42,7 +43,8 @@ type TaskFormData = {
   taskName: string;
   description: string;
   date: string;
-  time: string;
+  timeStart: string;
+  timeEnd: string;
   category: "education" | "work";
   subtasks: SubTask[];
 };
@@ -78,6 +80,7 @@ const colors = [
 ];
 
 export default function Component() {
+  const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const form = useForm<TaskFormData>({
     defaultValues: {
@@ -104,10 +107,29 @@ export default function Component() {
       date: day,
     };
   });
+
+  console.log("Weekdays", weekDays);
+  console.log("SELECTED DATA", selectedDate);
+
   const { data, refetch } = api.Task.getTask.useQuery({
     selectedDate: selectedDate.date,
   });
 
+  console.log(
+    "DATA START ",
+    data?.[0]?.startDuration,
+    "DATA END",
+    data?.[0]?.endDuration,
+  );
+
+  const addTask = api.Task.addTask.useMutation({
+    onSuccess: async () => {
+      toast({
+        title: "Successfully added new attendance",
+      });
+      await refetch();
+    },
+  });
   if (!data) {
     return <div>Loading...</div>;
   }
@@ -159,10 +181,28 @@ export default function Component() {
   };
 
   const onSubmit = async (data: TaskFormData) => {
-    console.log(data);
-    // Here you would typically send the data to your API
-    // For example: await api.Task.addTask.mutate(data);
-    await refetch();
+    // Combine date and time for start and end durations
+    const startDateTime = `${data.date}T${data.timeStart}:00.000Z`;
+    const endDateTime = `${data.date}T${data.timeEnd}:00.000Z`;
+
+    // Create Date objects for start and end durations
+    const startDuration = new Date(startDateTime);
+    const endDuration = new Date(endDateTime);
+
+    // Subtract hours (e.g., subtract 2 hours)
+    const hoursToSubtract = 8; // Change this to the number of hours you want to subtract
+    startDuration.setHours(startDuration.getHours() - hoursToSubtract);
+    endDuration.setHours(endDuration.getHours() - hoursToSubtract);
+
+    await addTask.mutateAsync({
+      name: data.taskName,
+      description: data.description,
+      dateDays: parseISO(data.date),
+      startDuration: startDuration,
+      endDuration: endDuration,
+      category: data.category,
+    });
+
     setOpen(false);
   };
 
@@ -226,19 +266,35 @@ export default function Component() {
                     </FormItem>
                   )}
                 />
-                <FormField
-                  control={form.control}
-                  name="time"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Time</FormLabel>
-                      <FormControl>
-                        <Input type="time" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                <div className="flex items-center gap-4">
+                  <FormField
+                    control={form.control}
+                    name="timeStart"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>start duration</FormLabel>
+                        <FormControl>
+                          <Input type="time" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="timeEnd"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>end Duration</FormLabel>
+                        <FormControl>
+                          <Input type="time" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
                 <FormField
                   control={form.control}
                   name="category"
@@ -313,18 +369,11 @@ export default function Component() {
           </DialogContent>
         </Dialog>
       </div>
-
       <div className="mb-1 flex w-full max-w-full items-end justify-between rounded-lg p-6 text-sm shadow-lg sm:px-32">
         {weekDays.map((data) => (
           <div
             key={data.monthDate}
             className="flex cursor-pointer flex-col items-center gap-2"
-            onClick={() =>
-              setSelectedDate({
-                monthDate: data.monthDate,
-                date: data.date.toDate(),
-              })
-            }
           >
             <p
               className={`rounded-full bg-red-400 px-2 py-1 text-xs text-white ${format(currentDay.toDate(), "MMM dd") === data.monthDate ? "" : "hidden"}`}
@@ -332,6 +381,12 @@ export default function Component() {
               Today
             </p>
             <div
+              onClick={() =>
+                setSelectedDate({
+                  monthDate: data.monthDate,
+                  date: data.date.toDate(),
+                })
+              }
               className={`flex flex-col items-center gap-1 p-4 hover:rounded-3xl hover:bg-blue-400 hover:text-white ${selectedDate.monthDate === data.monthDate ? "rounded-3xl bg-blue-400 p-4 text-white" : ""}`}
             >
               <p className="text-xs">{data.monthDate}</p>
@@ -340,6 +395,7 @@ export default function Component() {
           </div>
         ))}
       </div>
+
       <div className="w-full max-w-full rounded-lg bg-white p-6 shadow-lg">
         <div className="flex">
           <div className="w-24 flex-shrink-0">

@@ -22,12 +22,12 @@ export const task_router = createTRPCRouter({
       const day = selectedDate.getDate();
 
       const tasks = await ctx.db.task.findMany({
-        where: {
-          Date: {
-            gte: new Date(year, month - 1, day),
-            lt: new Date(year, month - 1, day + 1),
-          },
-        },
+        // where: {
+        //   Date: {
+        //     gte: new Date(year, month - 1, day),
+        //     lt: new Date(year, month - 1, day + 1),
+        //   },
+        // },
       });
 
       return tasks;
@@ -39,6 +39,7 @@ export const task_router = createTRPCRouter({
         TaskId: z.number().optional(),
         name: z.string(),
         description: z.string(),
+        dateDays: z.date(),
         startDuration: z.date(),
         endDuration: z.date(),
         category: z.enum([Category.education, Category.work]),
@@ -108,6 +109,7 @@ export const task_router = createTRPCRouter({
           data: {
             taskname: input.name,
             Description: input.description,
+            Date: input.dateDays,
             startDuration: input.startDuration,
             endDuration: input.endDuration,
             category: input.category,
