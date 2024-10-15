@@ -1,4 +1,5 @@
 "use client";
+
 import { api } from "@/trpc/react";
 import React, { useState } from "react";
 import { format, parse, parseISO } from "date-fns";
@@ -17,6 +18,7 @@ import {
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -37,17 +39,25 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 
 dayjs.extend(isoWeek);
+
 type Task = {
   id: string;
   taskName: string;
+  description: string;
   startDuration: string;
   endDuration: string;
+  category: "education" | "work";
+  Date: string;
+  taskStatus: boolean;
+  subtasks: SubTask[];
 };
 
 type SubTask = {
   subtaskName: string;
+  status: boolean;
 };
 
 type TaskFormData = {
@@ -58,6 +68,7 @@ type TaskFormData = {
   timeEnd: string;
   category: "education" | "work";
   subtasks: SubTask[];
+  taskStatus: boolean;
 };
 
 export const idToColorHueConvert = (id: string) => {
@@ -93,12 +104,13 @@ const colors = [
 export default function Component() {
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
-  const [selectedTaskData, setSelectedTaskData] = useState<any>();
+  const [selectedTaskData, setSelectedTaskData] = useState<Task | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
   const form = useForm<TaskFormData>({
     defaultValues: {
       subtasks: [],
+      taskStatus: false,
     },
   });
   const { fields, append, remove } = useFieldArray({
@@ -129,11 +141,12 @@ export default function Component() {
   const addTask = api.Task.addTask.useMutation({
     onSuccess: async () => {
       toast({
-        title: "Successfully added new attendance",
+        title: "Successfully added new task",
       });
       await refetch();
     },
   });
+
   if (!data) {
     return <div>Loading...</div>;
   }
@@ -149,7 +162,10 @@ export default function Component() {
     category: task.category,
     Date: task.Date,
     taskStatus: task.status,
-    subtasks: task.subtasks,
+    subtasks: task.subtasks.map((subtask: any) => ({
+      subtaskName: subtask.subtaskName,
+      status: subtask.status,
+    })),
   }));
 
   const timeSlots = Array.from({ length: 24 }, (_, index) => {
@@ -196,7 +212,7 @@ export default function Component() {
     const startDuration = new Date(startDateTime);
     const endDuration = new Date(endDateTime);
 
-    const hoursToSubtract = 8; // Change this to the number of hours you want to subtract
+    const hoursToSubtract = 8;
     startDuration.setHours(startDuration.getHours() - hoursToSubtract);
     endDuration.setHours(endDuration.getHours() - hoursToSubtract);
 
@@ -208,12 +224,15 @@ export default function Component() {
       endDuration: endDuration,
       category: data.category,
       subtask: data.subtasks,
+      status: data.taskStatus,
     });
 
     setOpen(false);
   };
 
   const handleEdit = async () => {
+    if (!selectedTaskData) return;
+
     const formattedDate = format(new Date(selectedTaskData.Date), "yyyy-MM-dd");
     const formattedStartTime = format(
       parse(selectedTaskData.startDuration, "hh:mm a", new Date()),
@@ -230,7 +249,7 @@ export default function Component() {
     const startDuration = new Date(startDateTime);
     const endDuration = new Date(endDateTime);
 
-    const hoursToSubtract = 8; // Change this to the number of hours you want to subtract
+    const hoursToSubtract = 8;
     startDuration.setHours(startDuration.getHours() - hoursToSubtract);
     endDuration.setHours(endDuration.getHours() - hoursToSubtract);
 
@@ -242,12 +261,16 @@ export default function Component() {
       startDuration: startDuration,
       endDuration: endDuration,
       category: selectedTaskData.category,
-      // subtask: data.subtasks,
+      subtask: selectedTaskData.subtasks,
+      status: selectedTaskData.taskStatus,
     });
-    console.log("SSS", formattedStartTime);
+
+    setIsEditDialogOpen(false);
   };
 
   const handleTaskClick = (task: Task) => {
+    console.log("TART", selectedTaskData);
+
     setSelectedTaskData(task);
     setIsEditDialogOpen(true);
   };
@@ -318,7 +341,7 @@ export default function Component() {
                     name="timeStart"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>start duration</FormLabel>
+                        <FormLabel>Start Duration</FormLabel>
                         <FormControl>
                           <Input type="time" {...field} />
                         </FormControl>
@@ -326,13 +349,12 @@ export default function Component() {
                       </FormItem>
                     )}
                   />
-
                   <FormField
                     control={form.control}
                     name="timeEnd"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>end Duration</FormLabel>
+                        <FormLabel>End Duration</FormLabel>
                         <FormControl>
                           <Input type="time" {...field} />
                         </FormControl>
@@ -373,8 +395,29 @@ export default function Component() {
                     </FormItem>
                   )}
                 />
+                <FormField
+                  control={form.control}
+                  name="taskStatus"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                      <div className="space-y-1 leading-none">
+                        <FormLabel>Task Status</FormLabel>
+                        <FormDescription>
+                          Mark as done if the task is completed.
+                        </FormDescription>
+                      </div>
+                    </FormItem>
+                  )}
+                />
                 <div>
                   <FormLabel>Subtasks</FormLabel>
+
                   {fields.map((field, index) => (
                     <FormField
                       key={field.id}
@@ -386,6 +429,15 @@ export default function Component() {
                             <FormControl>
                               <Input {...field} placeholder="Subtask name" />
                             </FormControl>
+                            <Checkbox
+                              checked={form.watch(`subtasks.${index}.status`)}
+                              onCheckedChange={(checked) => {
+                                form.setValue(
+                                  `subtasks.${index}.status`,
+                                  checked,
+                                );
+                              }}
+                            />
                             <Button
                               type="button"
                               variant="ghost"
@@ -404,7 +456,7 @@ export default function Component() {
                     variant="outline"
                     size="sm"
                     className="mt-2"
-                    onClick={() => append({ subtaskName: "" })}
+                    onClick={() => append({ subtaskName: "", status: false })}
                   >
                     Add Subtask
                   </Button>
@@ -422,7 +474,11 @@ export default function Component() {
             className="flex cursor-pointer flex-col items-center gap-2"
           >
             <p
-              className={`rounded-full bg-red-400 px-2 py-1 text-xs text-white ${format(currentDay.toDate(), "MMM dd") === data.monthDate ? "" : "hidden"}`}
+              className={`rounded-full bg-red-400 px-2 py-1 text-xs text-white ${
+                format(currentDay.toDate(), "MMM dd") === data.monthDate
+                  ? ""
+                  : "hidden"
+              }`}
             >
               Today
             </p>
@@ -433,7 +489,11 @@ export default function Component() {
                   date: data.date.toDate(),
                 })
               }
-              className={`flex flex-col items-center gap-1 p-4 hover:rounded-3xl hover:bg-blue-400 hover:text-white ${selectedDate.monthDate === data.monthDate ? "rounded-3xl bg-blue-400 p-4 text-white" : ""}`}
+              className={`flex flex-col items-center gap-1 p-4 hover:rounded-3xl hover:bg-blue-400 hover:text-white ${
+                selectedDate.monthDate === data.monthDate
+                  ? "rounded-3xl bg-blue-400 p-4 text-white"
+                  : ""
+              }`}
             >
               <p className="text-xs">{data.monthDate}</p>
               <p className="text-xs">{data.day}</p>
@@ -490,12 +550,11 @@ export default function Component() {
       </div>
 
       <AlertDialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        {" "}
         <AlertDialogContent className="max-h-[600px] overflow-scroll">
           <AlertDialogHeader>
             <AlertDialogTitle>Edit Task</AlertDialogTitle>
             <AlertDialogDescription>
-              Make changes to your task here. Click save when youre done.
+              Make changes to your task here. Click save when you're done.
             </AlertDialogDescription>
           </AlertDialogHeader>
           {selectedTaskData && (
@@ -588,58 +647,73 @@ export default function Component() {
                   </div>
                 </RadioGroup>
               </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label className="text-right">Task Status</Label>
+                <div className="col-span-3">
+                  <Checkbox
+                    checked={selectedTaskData.taskStatus}
+                    onCheckedChange={(checked) =>
+                      setSelectedTaskData({
+                        ...selectedTaskData,
+                        taskStatus: checked,
+                      })
+                    }
+                  />
+                  <span className="ml-2">Mark as done</span>
+                </div>
+              </div>
               <div className="grid grid-cols-4 items-start gap-4">
                 <Label className="text-right">Subtasks</Label>
                 <div className="col-span-3 space-y-2">
-                  {selectedTaskData.subtasks.length !== 0 ? (
-                    <>
-                      {selectedTaskData.subtasks.map(
-                        (subtask: any, index: any) => (
-                          <div
-                            key={index}
-                            className="flex items-center space-x-2"
-                          >
-                            <Input
-                              value={subtask.subtaskName}
-                              onChange={(e) => {
-                                const newSubtasks = [
-                                  ...selectedTaskData.subtasks,
-                                ];
-                                newSubtasks[index] = {
-                                  subtaskName: e.target.value,
-                                };
-                                setSelectedTaskData({
-                                  ...selectedTaskData,
-                                  subtasks: newSubtasks,
-                                });
-                              }}
-                            />
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => {
-                                const newSubtasks =
-                                  selectedTaskData.subtasks.filter(
-                                    (_: any, i: any) => i !== index,
-                                  );
-                                setSelectedTaskData({
-                                  ...selectedTaskData,
-                                  subtasks: newSubtasks,
-                                });
-                              }}
-                            >
-                              <X className="h-4 w-4" />
-                              <span className="sr-only">Remove subtask</span>
-                            </Button>
-                          </div>
-                        ),
-                      )}
-                    </>
-                  ) : (
-                    <></>
-                  )}
-
+                  {selectedTaskData.subtasks.map((subtask, index) => (
+                    <div key={index} className="flex items-center space-x-2">
+                      <Input
+                        value={subtask.subtaskName}
+                        onChange={(e) => {
+                          const newSubtasks = [...selectedTaskData.subtasks];
+                          newSubtasks[index] = {
+                            ...newSubtasks[index],
+                            subtaskName: e.target.value,
+                          };
+                          setSelectedTaskData({
+                            ...selectedTaskData,
+                            subtasks: newSubtasks,
+                          });
+                        }}
+                      />
+                      <Checkbox
+                        checked={subtask.status}
+                        onCheckedChange={(checked) => {
+                          const newSubtasks = [...selectedTaskData.subtasks];
+                          newSubtasks[index] = {
+                            ...newSubtasks[index],
+                            status: checked,
+                          };
+                          setSelectedTaskData({
+                            ...selectedTaskData,
+                            subtasks: newSubtasks,
+                          });
+                        }}
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => {
+                          const newSubtasks = selectedTaskData.subtasks.filter(
+                            (_, i) => i !== index,
+                          );
+                          setSelectedTaskData({
+                            ...selectedTaskData,
+                            subtasks: newSubtasks,
+                          });
+                        }}
+                      >
+                        <X className="h-4 w-4" />
+                        <span className="sr-only">Remove subtask</span>
+                      </Button>
+                    </div>
+                  ))}
                   <Button
                     type="button"
                     variant="outline"
@@ -649,7 +723,7 @@ export default function Component() {
                         ...selectedTaskData,
                         subtasks: [
                           ...selectedTaskData.subtasks,
-                          { subtaskName: "" },
+                          { subtaskName: "", status: false },
                         ],
                       });
                     }}

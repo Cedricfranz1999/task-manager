@@ -43,6 +43,7 @@ export const task_router = createTRPCRouter({
         name: z.string(),
         description: z.string(),
         dateDays: z.date(),
+        status: z.boolean(),
         startDuration: z.date(),
         endDuration: z.date(),
         category: z.enum([Category.education, Category.work]),
