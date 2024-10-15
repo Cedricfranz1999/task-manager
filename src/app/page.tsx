@@ -44,6 +44,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 dayjs.extend(isoWeek);
 
 type Task = {
+  status: boolean;
   id: string;
   taskName: string;
   description: string;
@@ -161,8 +162,9 @@ export default function Component() {
     endDuration: formatTime(task.endDuration),
     category: task.category,
     Date: task.Date,
-    taskStatus: task.status,
+    status: task.status,
     subtasks: task.subtasks.map((subtask: any) => ({
+      id: subtask.id,
       subtaskName: subtask.subtaskName,
       status: subtask.status,
     })),
@@ -262,23 +264,25 @@ export default function Component() {
       endDuration: endDuration,
       category: selectedTaskData.category,
       subtask: selectedTaskData.subtasks,
-      status: selectedTaskData.taskStatus,
+      status: selectedTaskData.status,
     });
+    console.log("54321", selectedTaskData);
 
     setIsEditDialogOpen(false);
   };
 
   const handleTaskClick = (task: Task) => {
-    console.log("TART", selectedTaskData);
-
     setSelectedTaskData(task);
     setIsEditDialogOpen(true);
   };
 
+  console.log("TART", selectedTaskData?.startDuration);
+
   return (
     <div className="flex min-h-screen flex-col items-center bg-gray-100 p-4">
       <div className="flex w-full items-end"></div>
-      <h1 className="mb-8 text-3xl font-bold">Daily Schedule</h1>
+      <div></div>
+      <h1 className="text-xl font-bold">Daily Schedule</h1>
       <div className="flex w-full items-center justify-end text-xs">
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
@@ -434,7 +438,7 @@ export default function Component() {
                               onCheckedChange={(checked) => {
                                 form.setValue(
                                   `subtasks.${index}.status`,
-                                  checked,
+                                  checked ? true : false,
                                 );
                               }}
                             />
@@ -467,7 +471,7 @@ export default function Component() {
           </DialogContent>
         </Dialog>
       </div>
-      <div className="mb-1 flex w-full max-w-full items-end justify-between rounded-lg p-6 text-sm shadow-lg sm:px-32">
+      <div className="mb-1 flex w-full max-w-full items-end justify-between rounded-lg px-6 py-2 text-sm shadow-lg sm:px-32">
         {weekDays.map((data) => (
           <div
             key={data.monthDate}
@@ -554,7 +558,7 @@ export default function Component() {
           <AlertDialogHeader>
             <AlertDialogTitle>Edit Task</AlertDialogTitle>
             <AlertDialogDescription>
-              Make changes to your task here. Click save when you're done.
+              Make changes to your task here. Click save when youre done.
             </AlertDialogDescription>
           </AlertDialogHeader>
           {selectedTaskData && (
@@ -597,13 +601,23 @@ export default function Component() {
                 </Label>
                 <Input
                   id="edit-startDuration"
-                  value={selectedTaskData.startDuration}
-                  onChange={(e) =>
+                  defaultValue={format(
+                    parse(
+                      selectedTaskData.startDuration,
+                      "hh:mm a",
+                      new Date(),
+                    ),
+                    "HH:mm",
+                  )}
+                  onChange={(e) => {
+                    const timeValue = e.target.value;
+                    const [hours, minutes] = timeValue.split(":").map(Number);
+                    const suffix = hours < 12 ? "AM" : "PM";
                     setSelectedTaskData({
                       ...selectedTaskData,
-                      startDuration: e.target.value,
-                    })
-                  }
+                      startDuration: `${timeValue} ${suffix}`,
+                    });
+                  }}
                   type="time"
                   className="col-span-3"
                 />
@@ -613,15 +627,21 @@ export default function Component() {
                   End Time
                 </Label>
                 <Input
-                  id="edit-endDuration"
-                  type="time"
-                  value={selectedTaskData.endDuration}
-                  onChange={(e) =>
+                  id="edit-startDuration"
+                  defaultValue={format(
+                    parse(selectedTaskData.endDuration, "hh:mm a", new Date()),
+                    "HH:mm",
+                  )}
+                  onChange={(e) => {
+                    const timeValue = e.target.value;
+                    const [hours, minutes] = timeValue.split(":").map(Number);
+                    const suffix = hours < 12 ? "AM" : "PM";
                     setSelectedTaskData({
                       ...selectedTaskData,
-                      endDuration: e.target.value,
-                    })
-                  }
+                      startDuration: `${timeValue} ${suffix}`,
+                    });
+                  }}
+                  type="time"
                   className="col-span-3"
                 />
               </div>
@@ -655,7 +675,7 @@ export default function Component() {
                     onCheckedChange={(checked) =>
                       setSelectedTaskData({
                         ...selectedTaskData,
-                        taskStatus: checked,
+                        taskStatus: checked ? true : false,
                       })
                     }
                   />
@@ -674,7 +694,7 @@ export default function Component() {
                           newSubtasks[index] = {
                             ...newSubtasks[index],
                             subtaskName: e.target.value,
-                          };
+                          } as any;
                           setSelectedTaskData({
                             ...selectedTaskData,
                             subtasks: newSubtasks,
@@ -687,8 +707,8 @@ export default function Component() {
                           const newSubtasks = [...selectedTaskData.subtasks];
                           newSubtasks[index] = {
                             ...newSubtasks[index],
-                            status: checked,
-                          };
+                            status: checked ? true : false,
+                          } as any;
                           setSelectedTaskData({
                             ...selectedTaskData,
                             subtasks: newSubtasks,

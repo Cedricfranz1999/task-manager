@@ -22,12 +22,12 @@ export const task_router = createTRPCRouter({
       const day = selectedDate.getDate();
 
       const tasks = await ctx.db.task.findMany({
-        // where: {
-        //   Date: {
-        //     gte: new Date(year, month - 1, day),
-        //     lt: new Date(year, month - 1, day + 1),
-        //   },
-        // },
+        where: {
+          Date: {
+            gte: new Date(year, month - 1, day),
+            lt: new Date(year, month - 1, day + 1),
+          },
+        },
         include: {
           subtasks: true,
         },
@@ -74,6 +74,29 @@ export const task_router = createTRPCRouter({
           },
         });
 
+        // Fetch existing subtasks for comparison
+        const existingSubtasks = await ctx.db.subTask.findMany({
+          where: { taskId: input.TaskId },
+          select: { id: true },
+        });
+
+        const inputSubtaskIds =
+          input.subtask?.map((sub) => sub.id).filter(Boolean) || [];
+
+        // Delete subtasks that are not in the input.subtask array
+        const subtasksToDelete = existingSubtasks
+          .filter((existingSub) => !inputSubtaskIds.includes(existingSub.id))
+          .map((sub) => sub.id);
+
+        if (subtasksToDelete.length > 0) {
+          await ctx.db.subTask.deleteMany({
+            where: {
+              id: { in: subtasksToDelete },
+            },
+          });
+        }
+
+        // Update existing subtasks
         const updates =
           input.subtask
             ?.filter((sub) => sub.id) // Use optional chaining here
@@ -121,9 +144,7 @@ export const task_router = createTRPCRouter({
           },
         });
 
-        // Check if input.subtask is defined before trying to access its length
         if (input.subtask?.length) {
-          // Use optional chaining with length check
           await ctx.db.subTask.createMany({
             data: input.subtask.map(({ subtaskName, status }) => ({
               subtaskName,
