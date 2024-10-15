@@ -1,7 +1,7 @@
 "use client";
 import { api } from "@/trpc/react";
 import React, { useState } from "react";
-import { format, parseISO } from "date-fns";
+import { format, parse, parseISO } from "date-fns";
 import dayjs from "dayjs";
 import isoWeek from "dayjs/plugin/isoWeek";
 import { Button } from "@/components/ui/button";
@@ -26,6 +26,17 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useForm, useFieldArray } from "react-hook-form";
 import { X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Label } from "@/components/ui/label";
 
 dayjs.extend(isoWeek);
 type Task = {
@@ -82,6 +93,9 @@ const colors = [
 export default function Component() {
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
+  const [selectedTaskData, setSelectedTaskData] = useState<any>();
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+
   const form = useForm<TaskFormData>({
     defaultValues: {
       subtasks: [],
@@ -108,19 +122,9 @@ export default function Component() {
     };
   });
 
-  console.log("Weekdays", weekDays);
-  console.log("SELECTED DATA", selectedDate);
-
   const { data, refetch } = api.Task.getTask.useQuery({
     selectedDate: selectedDate.date,
   });
-
-  console.log(
-    "DATA START ",
-    data?.[0]?.startDuration,
-    "DATA END",
-    data?.[0]?.endDuration,
-  );
 
   const addTask = api.Task.addTask.useMutation({
     onSuccess: async () => {
@@ -139,8 +143,13 @@ export default function Component() {
   const tasks: Task[] = data.map((task: any) => ({
     id: task.id.toString(),
     taskName: task.taskname,
+    description: task.Description,
     startDuration: formatTime(task.startDuration),
     endDuration: formatTime(task.endDuration),
+    category: task.category,
+    Date: task.Date,
+    taskStatus: task.status,
+    subtasks: task.subtasks,
   }));
 
   const timeSlots = Array.from({ length: 24 }, (_, index) => {
@@ -204,6 +213,45 @@ export default function Component() {
     setOpen(false);
   };
 
+  const handleEdit = async () => {
+    const formattedDate = format(new Date(selectedTaskData.Date), "yyyy-MM-dd");
+    const formattedStartTime = format(
+      parse(selectedTaskData.startDuration, "hh:mm a", new Date()),
+      "HH:mm",
+    );
+    const formattedEndTime = format(
+      parse(selectedTaskData.endDuration, "hh:mm a", new Date()),
+      "HH:mm",
+    );
+
+    const startDateTime = `${formattedDate}T${formattedStartTime}:00.000Z`;
+    const endDateTime = `${formattedDate}T${formattedEndTime}:00.000Z`;
+
+    const startDuration = new Date(startDateTime);
+    const endDuration = new Date(endDateTime);
+
+    const hoursToSubtract = 8; // Change this to the number of hours you want to subtract
+    startDuration.setHours(startDuration.getHours() - hoursToSubtract);
+    endDuration.setHours(endDuration.getHours() - hoursToSubtract);
+
+    await addTask.mutateAsync({
+      TaskId: Number(selectedTaskData.id),
+      name: selectedTaskData.taskName,
+      description: selectedTaskData.description,
+      dateDays: parseISO(formattedDate),
+      startDuration: startDuration,
+      endDuration: endDuration,
+      category: selectedTaskData.category,
+      // subtask: data.subtasks,
+    });
+    console.log("SSS", formattedStartTime);
+  };
+
+  const handleTaskClick = (task: Task) => {
+    setSelectedTaskData(task);
+    setIsEditDialogOpen(true);
+  };
+
   return (
     <div className="flex min-h-screen flex-col items-center bg-gray-100 p-4">
       <div className="flex w-full items-end"></div>
@@ -213,7 +261,7 @@ export default function Component() {
           <DialogTrigger asChild>
             <Button size="sm">Add new task</Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[425px]">
+          <DialogContent className="max-h-[600px] overflow-scroll sm:max-w-[425px]">
             <DialogHeader>
               <DialogTitle>Add New Task</DialogTitle>
             </DialogHeader>
@@ -416,6 +464,7 @@ export default function Component() {
               return (
                 <div
                   key={task.id}
+                  onClick={() => handleTaskClick(task)}
                   className="absolute mt-7 flex cursor-pointer items-center overflow-hidden rounded-l-xl rounded-r-md pl-2 hover:shadow-md hover:brightness-110 hover:drop-shadow-md"
                   style={{
                     top: taskPosition.top,
@@ -439,6 +488,186 @@ export default function Component() {
           </div>
         </div>
       </div>
+
+      <AlertDialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        {" "}
+        <AlertDialogContent className="max-h-[600px] overflow-scroll">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Edit Task</AlertDialogTitle>
+            <AlertDialogDescription>
+              Make changes to your task here. Click save when youre done.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          {selectedTaskData && (
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="edit-taskName" className="text-right">
+                  Task Name
+                </Label>
+                <Input
+                  id="edit-taskName"
+                  value={selectedTaskData.taskName}
+                  onChange={(e) =>
+                    setSelectedTaskData({
+                      ...selectedTaskData,
+                      taskName: e.target.value,
+                    })
+                  }
+                  className="col-span-3"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="edit-description" className="text-right">
+                  Description
+                </Label>
+                <Textarea
+                  id="edit-description"
+                  value={selectedTaskData.description}
+                  onChange={(e) =>
+                    setSelectedTaskData({
+                      ...selectedTaskData,
+                      description: e.target.value,
+                    })
+                  }
+                  className="col-span-3"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="edit-startDuration" className="text-right">
+                  Start Time
+                </Label>
+                <Input
+                  id="edit-startDuration"
+                  value={selectedTaskData.startDuration}
+                  onChange={(e) =>
+                    setSelectedTaskData({
+                      ...selectedTaskData,
+                      startDuration: e.target.value,
+                    })
+                  }
+                  type="time"
+                  className="col-span-3"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="edit-endDuration" className="text-right">
+                  End Time
+                </Label>
+                <Input
+                  id="edit-endDuration"
+                  type="time"
+                  value={selectedTaskData.endDuration}
+                  onChange={(e) =>
+                    setSelectedTaskData({
+                      ...selectedTaskData,
+                      endDuration: e.target.value,
+                    })
+                  }
+                  className="col-span-3"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label className="text-right">Category</Label>
+                <RadioGroup
+                  value={selectedTaskData.category}
+                  onValueChange={(value: "education" | "work") =>
+                    setSelectedTaskData({
+                      ...selectedTaskData,
+                      category: value,
+                    })
+                  }
+                  className="col-span-3"
+                >
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="education" id="edit-education" />
+                    <Label htmlFor="edit-education">Education</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="work" id="edit-work" />
+                    <Label htmlFor="edit-work">Work</Label>
+                  </div>
+                </RadioGroup>
+              </div>
+              <div className="grid grid-cols-4 items-start gap-4">
+                <Label className="text-right">Subtasks</Label>
+                <div className="col-span-3 space-y-2">
+                  {selectedTaskData.subtasks.length !== 0 ? (
+                    <>
+                      {selectedTaskData.subtasks.map(
+                        (subtask: any, index: any) => (
+                          <div
+                            key={index}
+                            className="flex items-center space-x-2"
+                          >
+                            <Input
+                              value={subtask.subtaskName}
+                              onChange={(e) => {
+                                const newSubtasks = [
+                                  ...selectedTaskData.subtasks,
+                                ];
+                                newSubtasks[index] = {
+                                  subtaskName: e.target.value,
+                                };
+                                setSelectedTaskData({
+                                  ...selectedTaskData,
+                                  subtasks: newSubtasks,
+                                });
+                              }}
+                            />
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => {
+                                const newSubtasks =
+                                  selectedTaskData.subtasks.filter(
+                                    (_: any, i: any) => i !== index,
+                                  );
+                                setSelectedTaskData({
+                                  ...selectedTaskData,
+                                  subtasks: newSubtasks,
+                                });
+                              }}
+                            >
+                              <X className="h-4 w-4" />
+                              <span className="sr-only">Remove subtask</span>
+                            </Button>
+                          </div>
+                        ),
+                      )}
+                    </>
+                  ) : (
+                    <></>
+                  )}
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setSelectedTaskData({
+                        ...selectedTaskData,
+                        subtasks: [
+                          ...selectedTaskData.subtasks,
+                          { subtaskName: "" },
+                        ],
+                      });
+                    }}
+                  >
+                    Add Subtask
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleEdit}>
+              Save changes
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

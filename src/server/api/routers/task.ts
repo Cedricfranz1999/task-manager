@@ -28,6 +28,9 @@ export const task_router = createTRPCRouter({
         //     lt: new Date(year, month - 1, day + 1),
         //   },
         // },
+        include: {
+          subtasks: true,
+        },
       });
 
       return tasks;
