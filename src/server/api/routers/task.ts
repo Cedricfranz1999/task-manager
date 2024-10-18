@@ -6,26 +6,33 @@ export const task_router = createTRPCRouter({
   getTask: publicProcedure
     .input(
       z.object({
-        selectedDate: z.date().optional(),
+        selectedDate: z.date().optional().nullable(),
       }),
     )
     .query(async ({ ctx, input }) => {
       console.log("Selected Date:", input.selectedDate);
 
+      // If no selectedDate is provided, return all tasks
       if (!input.selectedDate) {
-        return []; // Return an empty array if no date is provided
+        const allTasks = await ctx.db.task.findMany({
+          include: {
+            subtasks: true,
+          },
+        });
+        return allTasks;
       }
 
+      // Filter tasks based on the provided selectedDate
       const selectedDate = new Date(input.selectedDate);
       const year = selectedDate.getFullYear();
-      const month = selectedDate.getMonth() + 1;
+      const month = selectedDate.getMonth();
       const day = selectedDate.getDate();
 
       const tasks = await ctx.db.task.findMany({
         where: {
           Date: {
-            gte: new Date(year, month - 1, day),
-            lt: new Date(year, month - 1, day + 1),
+            gte: new Date(year, month, day),
+            lt: new Date(year, month, day + 1),
           },
         },
         include: {
@@ -71,6 +78,7 @@ export const task_router = createTRPCRouter({
             startDuration: input.startDuration,
             endDuration: input.endDuration,
             category: input.category,
+            status: input.status,
           },
         });
 

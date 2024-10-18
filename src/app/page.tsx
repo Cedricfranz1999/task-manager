@@ -1,7 +1,7 @@
 "use client";
 
 import { api } from "@/trpc/react";
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { format, parse, parseISO } from "date-fns";
 import dayjs from "dayjs";
 import isoWeek from "dayjs/plugin/isoWeek";
@@ -26,7 +26,7 @@ import {
 } from "@/components/ui/form";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useForm, useFieldArray } from "react-hook-form";
-import { X } from "lucide-react";
+import { Loader, Table, Timer, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   AlertDialog,
@@ -40,6 +40,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Card } from "@/components/ui/card";
 
 dayjs.extend(isoWeek);
 
@@ -105,6 +106,8 @@ const colors = [
 export default function Component() {
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState(true);
+
   const [selectedTaskData, setSelectedTaskData] = useState<Task | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
@@ -136,7 +139,7 @@ export default function Component() {
   });
 
   const { data, refetch } = api.Task.getTask.useQuery({
-    selectedDate: selectedDate.date,
+    selectedDate: selectedDate ? selectedDate?.date : undefined,
   });
 
   const addTask = api.Task.addTask.useMutation({
@@ -149,7 +152,12 @@ export default function Component() {
   });
 
   if (!data) {
-    return <div>Loading...</div>;
+    return (
+      <div className="flex w-full animate-pulse flex-col items-center justify-center gap-1 bg-gray-200 py-72">
+        <Loader className="animate-spin text-blue-500" />
+        <p>Loading...</p>
+      </div>
+    );
   }
 
   const formatTime = (isoTime: string) => format(new Date(isoTime), "hh:mm a");
@@ -266,7 +274,7 @@ export default function Component() {
       subtask: selectedTaskData.subtasks,
       status: selectedTaskData.status,
     });
-    console.log("54321", selectedTaskData);
+    console.log("54321", selectedTaskData.status);
 
     setIsEditDialogOpen(false);
   };
@@ -276,14 +284,33 @@ export default function Component() {
     setIsEditDialogOpen(true);
   };
 
-  console.log("TART", selectedTaskData?.startDuration);
+  console.log("TART", selectedTaskData);
 
   return (
     <div className="flex min-h-screen flex-col items-center bg-gray-100 p-4">
       <div className="flex w-full items-end"></div>
       <div></div>
       <h1 className="text-xl font-bold">Daily Schedule</h1>
-      <div className="flex w-full items-center justify-end text-xs">
+      <div className="flex w-full items-center justify-between gap-4 text-xs">
+        <Card className="flex cursor-pointer items-center justify-end gap-3 px-2 py-1 shadow-sm drop-shadow-md">
+          <Timer
+            onClick={() => {
+              setActiveTab(true);
+              setSelectedDate({
+                monthDate: format(currentDay.toDate(), "MMM dd"),
+                date: currentDay.toDate(),
+              });
+            }}
+            className={` ${!activeTab ? "text-gray-500" : "text-blue-500"}`}
+          />
+          <Table
+            onClick={() => {
+              setActiveTab(false);
+              setSelectedDate(null);
+            }}
+            className={`${activeTab ? "text-gray-500" : "text-blue-500"}`}
+          />
+        </Card>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
             <Button size="sm">Add new task</Button>
@@ -471,86 +498,153 @@ export default function Component() {
           </DialogContent>
         </Dialog>
       </div>
-      <div className="mb-1 flex w-full max-w-full items-end justify-between rounded-lg px-6 py-2 text-sm shadow-lg sm:px-32">
-        {weekDays.map((data) => (
-          <div
-            key={data.monthDate}
-            className="flex cursor-pointer flex-col items-center gap-2"
-          >
-            <p
-              className={`rounded-full bg-red-400 px-2 py-1 text-xs text-white ${
-                format(currentDay.toDate(), "MMM dd") === data.monthDate
-                  ? ""
-                  : "hidden"
-              }`}
-            >
-              Today
-            </p>
+      <div className={`${!activeTab ? "hidden" : ""} w-full`}>
+        <div className="mb-1 flex w-full max-w-full items-end justify-between rounded-lg px-6 py-2 text-sm shadow-lg sm:px-32">
+          {weekDays.map((data) => (
             <div
-              onClick={() =>
-                setSelectedDate({
-                  monthDate: data.monthDate,
-                  date: data.date.toDate(),
-                })
-              }
-              className={`flex flex-col items-center gap-1 p-4 hover:rounded-3xl hover:bg-blue-400 hover:text-white ${
-                selectedDate.monthDate === data.monthDate
-                  ? "rounded-3xl bg-blue-400 p-4 text-white"
-                  : ""
-              }`}
+              key={data.monthDate}
+              className="flex cursor-pointer flex-col items-center gap-2"
             >
-              <p className="text-xs">{data.monthDate}</p>
-              <p className="text-xs">{data.day}</p>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <div className="w-full max-w-full rounded-lg bg-white p-6 shadow-lg">
-        <div className="flex">
-          <div className="w-24 flex-shrink-0">
-            {timeSlots.map((time, index) => (
-              <div
-                key={index}
-                className="flex h-12 items-center justify-end pr-4"
+              <p
+                className={`rounded-full bg-red-400 px-2 py-1 text-xs text-white ${
+                  format(currentDay.toDate(), "MMM dd") === data.monthDate
+                    ? ""
+                    : "hidden"
+                }`}
               >
-                <span className="text-sm font-medium text-gray-500">
-                  {time}
-                </span>
+                Today
+              </p>
+              <div
+                onClick={() =>
+                  setSelectedDate({
+                    monthDate: data.monthDate,
+                    date: data.date.toDate(),
+                  })
+                }
+                className={`flex flex-col items-center gap-1 p-4 hover:rounded-3xl hover:bg-blue-400 hover:text-white ${
+                  selectedDate?.monthDate === data.monthDate
+                    ? "rounded-3xl bg-blue-400 p-4 text-white"
+                    : ""
+                }`}
+              >
+                <p className="text-xs">{data.monthDate}</p>
+                <p className="text-xs">{data.day}</p>
               </div>
-            ))}
-          </div>
-          <div className="relative flex-grow border-l border-gray-200">
-            {tasks.map((task, index, allTasks) => {
-              const taskPosition = getTaskPosition(task, index, allTasks);
-              const colorIndex = idToColorHueConvert(task.id);
-              const color = colors[colorIndex];
-              return (
+            </div>
+          ))}
+        </div>
+
+        <div className="w-full max-w-full rounded-lg bg-white p-6 shadow-lg">
+          <div className="flex">
+            <div className="w-24 flex-shrink-0">
+              {timeSlots.map((time, index) => (
                 <div
-                  key={task.id}
-                  onClick={() => handleTaskClick(task)}
-                  className="absolute mt-7 flex cursor-pointer items-center overflow-hidden rounded-l-xl rounded-r-md pl-2 hover:shadow-md hover:brightness-110 hover:drop-shadow-md"
-                  style={{
-                    top: taskPosition.top,
-                    height: taskPosition.height,
-                    left: taskPosition.left,
-                    width: taskPosition.width,
-                    backgroundColor: `${color}33`,
-                    borderLeft: `4px solid ${color}`,
-                    borderBottom: `1px solid ${color}`,
-                  }}
+                  key={index}
+                  className="flex h-12 items-center justify-end pr-4"
                 >
-                  <span
-                    className="truncate text-sm font-semibold"
-                    style={{ color: color }}
-                  >
-                    {task.taskName}
+                  <span className="text-sm font-medium text-gray-500">
+                    {time}
                   </span>
                 </div>
-              );
-            })}
+              ))}
+            </div>
+            <div className="relative flex-grow border-l border-gray-200">
+              {tasks.map((task, index, allTasks) => {
+                const taskPosition = getTaskPosition(task, index, allTasks);
+                const colorIndex = idToColorHueConvert(task.id);
+                const color = colors[colorIndex];
+                return (
+                  <div
+                    key={task.id}
+                    onClick={() => handleTaskClick(task)}
+                    className="absolute mt-7 flex cursor-pointer items-center overflow-hidden rounded-l-xl rounded-r-md pl-2 hover:shadow-md hover:brightness-110 hover:drop-shadow-md"
+                    style={{
+                      top: taskPosition.top,
+                      height: taskPosition.height,
+                      left: taskPosition.left,
+                      width: taskPosition.width,
+                      backgroundColor: `${color}33`,
+                      borderLeft: `4px solid ${color}`,
+                      borderBottom: `1px solid ${color}`,
+                    }}
+                  >
+                    <span
+                      className="truncate text-sm font-semibold"
+                      style={{ color: color }}
+                    >
+                      {task.taskName}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
+      </div>
+      <div
+        className={`${activeTab ? "hidden" : ""} h-screen w-full bg-gray-300`}
+      >
+        {tasks.map((task, index, allTasks) => {
+          // eslint-disable-next-line react-hooks/rules-of-hooks
+          const parseDate = (dateInput: string | Date): Date => {
+            if (dateInput instanceof Date) {
+              return dateInput;
+            }
+            // Try parsing as ISO string
+            const isoDate = parseISO(dateInput);
+            if (!isNaN(isoDate.getTime())) {
+              return isoDate;
+            }
+            // Try parsing as "MM/DD/YYYY" format
+            const parsedDate = parse(dateInput, "MM/dd/yyyy", new Date());
+            if (!isNaN(parsedDate.getTime())) {
+              return parsedDate;
+            }
+            // If all else fails, return current date
+            console.error(`Invalid date format: ${dateInput}`);
+            return new Date();
+          };
+
+          // Sort tasks by date
+          const sortedTasks = [...tasks].sort(
+            (a, b) => parseDate(a.Date).getTime() - parseDate(b.Date).getTime(),
+          );
+
+          // Group tasks by date
+          // eslint-disable-next-line @typescript-eslint/consistent-indexed-object-style, @typescript-eslint/no-redundant-type-constituents
+          const groupedTasks: { [key: string]: Task[] | any } = {};
+
+          sortedTasks.forEach((task) => {
+            const dateKey = format(parseDate(task.Date), "yyyy-MM-dd");
+            if (!groupedTasks[dateKey]) {
+              groupedTasks[dateKey] = [];
+            }
+            groupedTasks[dateKey].push(task);
+          });
+
+          // Convert object to array of entries
+          const sortedAndGroupedTasks = Object.entries(groupedTasks);
+          console.log("owshie", sortedAndGroupedTasks);
+          return (
+            // eslint-disable-next-line react/jsx-key
+            <div className="flex h-screen w-full bg-blue-500">
+              {sortedAndGroupedTasks.map((group, index) => (
+                <div key={group[0] + index}>
+                  {" "}
+                  <h2 className="text-white">
+                    {format(parseISO(group[0]), "MMMM dd, yyyy")}
+                  </h2>
+                  {group[1].map((task: any) => (
+                    <p key={task.id} className="text-white">
+                      {" "}
+                      {task.taskName}: {task.description}
+                    </p>
+                  ))}
+                </div>
+              ))}
+            </div>
+          );
+        })}
       </div>
 
       <AlertDialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
@@ -671,11 +765,11 @@ export default function Component() {
                 <Label className="text-right">Task Status</Label>
                 <div className="col-span-3">
                   <Checkbox
-                    checked={selectedTaskData.taskStatus}
+                    checked={selectedTaskData.status}
                     onCheckedChange={(checked) =>
                       setSelectedTaskData({
                         ...selectedTaskData,
-                        taskStatus: checked ? true : false,
+                        status: checked ? true : false,
                       })
                     }
                   />
