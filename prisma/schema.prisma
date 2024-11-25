@@ -21,16 +21,19 @@ model Post {
 }
 
 model Task {
-    id            Int      @id @default(autoincrement())
+    id            Int       @id @default(autoincrement())
     taskname      String
     Description   String?
     Date          DateTime?
     startDuration DateTime
     endDuration   DateTime
-    status        Boolean  @default(false)
-    subtasks      SubTask[] 
-    category      Category  @default(education)
+    status        Boolean   @default(false)
+    subtasks      SubTask[]
+    category      Category   @default(education)
+    updatedAt     DateTime   @updatedAt @default(now())
+
 }
+
 
 model SubTask {
     id          Int      @id @default(autoincrement())

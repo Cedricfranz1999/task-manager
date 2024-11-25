@@ -38,6 +38,9 @@ export const task_router = createTRPCRouter({
         include: {
           subtasks: true,
         },
+        orderBy: {
+          startDuration: "asc",
+        },
       });
 
       return tasks;
