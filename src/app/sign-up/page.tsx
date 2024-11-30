@@ -19,22 +19,67 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { CheckCircle, ListTodo, Calendar, BarChart2 } from "lucide-react";
+import { ListTodo, Calendar, CheckCircle, BarChart2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { api } from "@/trpc/react";
+import { useToast } from "@/hooks/use-toast";
+import { useRouter } from "next/navigation";
 
 export default function TaskManagerIntro() {
   const [activeTab, setActiveTab] = useState("signup");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [contactNumber, setContactNumber] = useState("");
+  const [birthDate, setBirthDate] = useState("");
+  const [email, setEmail] = useState("");
+  const [name, setName] = useState("");
+
+  const { toast } = useToast();
+  const router = useRouter();
+
+  const Signup = api.Auth.Signup.useMutation({
+    onSuccess: () => {
+      setName("");
+      setEmail("");
+      setPassword("");
+      setConfirmPassword("");
+      setContactNumber("");
+      setBirthDate("");
+      window.alert("successfully registered");
+      router.push("/sign-in");
+    },
+    onError: (error) => {
+      window.alert("Error while signup check your fields");
+      setName("");
+      setEmail("");
+      setPassword("");
+      setConfirmPassword("");
+      setContactNumber("");
+      setBirthDate("");
+    },
+  });
 
   const handleSubmit = (event: React.FormEvent) => {
+    const dateOfBirth = new Date(birthDate);
+
     event.preventDefault();
-    // Handle form submission here
-    console.log(`${activeTab} form submitted`);
+    if (password !== confirmPassword) {
+      console.log("Passwords do not match, but no error will be shown.");
+    }
+    Signup.mutate({
+      name: name,
+      email: email,
+      password: password,
+      phoneNumber: contactNumber,
+      age: 1,
+      dateOfBirth: dateOfBirth,
+    });
   };
 
   return (
-    <div className="flex min-h-screen flex-col bg-gray-100 lg:flex-row">
+    <div className="flex min-h-screen flex-col bg-gray-200 lg:flex-row">
       {/* Task Manager Introduction */}
-      <div className="w-full bg-gradient-to-br from-primary/10 to-secondary/10 p-4 lg:w-1/2 lg:p-8">
+      <div className="w-full lg:w-1/2 lg:p-8">
         <div className="mx-auto max-w-3xl">
           <h1 className="mb-4 text-3xl font-bold text-primary sm:text-4xl lg:mb-6">
             Welcome to TaskMaster
@@ -128,13 +173,12 @@ export default function TaskManagerIntro() {
         </div>
       </div>
 
-      {/* Sign Up and Login Forms */}
-      <div className="flex w-full items-center bg-white p-4 lg:w-1/2 lg:p-8">
+      {/* Sign Up Form */}
+      <div className="flex w-full items-center bg-gradient-to-r from-blue-400 to-blue-300 p-4 lg:w-1/2 lg:p-8">
         <Card className="mx-auto w-full max-w-md">
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="signup">Sign Up</TabsTrigger>
-              <TabsTrigger value="login">Login</TabsTrigger>
             </TabsList>
             <TabsContent value="signup">
               <CardHeader>
@@ -147,14 +191,40 @@ export default function TaskManagerIntro() {
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="signup-name">Name</Label>
-                    <Input id="signup-name" name="name" required />
+                    <Input
+                      value={name}
+                      required
+                      onChange={(e) => setName(e.target.value)}
+                    />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="signup-email">Email</Label>
+                    <Label>Email</Label>
                     <Input
-                      id="signup-email"
-                      name="email"
+                      onChange={(e) => setEmail(e.target.value)}
                       type="email"
+                      value={email}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-contact">Contact Number</Label>
+                    <Input
+                      id="signup-contact"
+                      name="contactNumber"
+                      type="tel"
+                      value={contactNumber}
+                      onChange={(e) => setContactNumber(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-birthdate">Date of Birth</Label>
+                    <Input
+                      id="signup-birthdate"
+                      name="birthDate"
+                      type="date"
+                      value={birthDate}
+                      onChange={(e) => setBirthDate(e.target.value)}
                       required
                     />
                   </div>
@@ -164,23 +234,23 @@ export default function TaskManagerIntro() {
                       id="signup-password"
                       name="password"
                       type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
                       required
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="department">Department</Label>
-                    <Select name="department" required>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select department" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="cs">Computer Science</SelectItem>
-                        <SelectItem value="eng">Engineering</SelectItem>
-                        <SelectItem value="bus">Business</SelectItem>
-                        <SelectItem value="arts">Arts</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <Label htmlFor="confirm-password">Confirm Password</Label>
+                    <Input
+                      id="confirm-password"
+                      name="confirmPassword"
+                      type="password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      required
+                    />
                   </div>
+
                   <Button className="w-full" type="submit">
                     Sign Up
                   </Button>
@@ -190,47 +260,6 @@ export default function TaskManagerIntro() {
                 <p className="w-full text-center text-xs text-gray-500 sm:text-sm">
                   By signing up, you agree to our Terms of Service and Privacy
                   Policy.
-                </p>
-              </CardFooter>
-            </TabsContent>
-            <TabsContent value="login">
-              <CardHeader>
-                <CardTitle>Welcome back</CardTitle>
-                <CardDescription>
-                  Login to your TaskMaster account
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="login-email">Email</Label>
-                    <Input
-                      id="login-email"
-                      name="email"
-                      type="email"
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="login-password">Password</Label>
-                    <Input
-                      id="login-password"
-                      name="password"
-                      type="password"
-                      required
-                    />
-                  </div>
-                  <Button className="w-full" type="submit">
-                    Login
-                  </Button>
-                </form>
-              </CardContent>
-              <CardFooter>
-                <p className="w-full text-center text-xs text-gray-500 sm:text-sm">
-                  Forgot your password?{" "}
-                  <a href="#" className="text-primary hover:underline">
-                    Reset it here
-                  </a>
                 </p>
               </CardFooter>
             </TabsContent>

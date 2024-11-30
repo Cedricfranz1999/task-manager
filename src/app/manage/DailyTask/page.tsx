@@ -1,7 +1,7 @@
 "use client";
 
 import { api } from "@/trpc/react";
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { format, parse, parseISO } from "date-fns";
 import dayjs from "dayjs";
 import isoWeek from "dayjs/plugin/isoWeek";
@@ -52,6 +52,16 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
+import { useRouter } from "next/navigation";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 dayjs.extend(isoWeek);
 
@@ -118,7 +128,11 @@ export default function Component() {
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [activeTab, setActiveTab] = useState(true);
+  const [selectCategory, setSelectedCategory] = useState<
+    "both" | "education" | "work"
+  >("both");
 
+  const [status, setStatus] = useState<"both" | "done" | "pending">("both");
   const [selectedTaskData, setSelectedTaskData] = useState<Task | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
@@ -140,6 +154,14 @@ export default function Component() {
     date: currentDay.toDate(),
   });
 
+  const router = useRouter();
+  const storedEmail = localStorage.getItem("email");
+  const storedPassword = localStorage.getItem("password");
+
+  if (!storedEmail && !storedPassword) {
+    router.push("/sign-in");
+  }
+
   const weekDays = Array.from({ length: 7 }, (_, index) => {
     const day = startOfWeek.add(index, "day");
     return {
@@ -149,9 +171,24 @@ export default function Component() {
     };
   });
 
-  const { data, refetch } = api.Task.getTask.useQuery({
-    selectedDate: selectedDate ? selectedDate?.date : undefined,
+  const { data: userData } = api.Auth.getAllUser.useQuery({
+    email: storedEmail || "",
   });
+  console.log("ASDAS", userData?.[0]?.id);
+
+  const { data, refetch } = api.Task.getTask.useQuery(
+    {
+      selectedDate: selectedDate?.date,
+      userId: userData?.[0]?.id,
+      category: selectCategory,
+      status: status,
+    },
+    {
+      enabled: Boolean(userData?.length),
+    },
+  );
+
+  console.log("DATA DATA ", data);
 
   const addTask = api.Task.addTask.useMutation({
     onSuccess: async () => {
@@ -239,6 +276,7 @@ export default function Component() {
     endDuration.setHours(endDuration.getHours() - hoursToSubtract);
 
     await addTask.mutateAsync({
+      userId: userData?.[0]?.id,
       name: data.taskName,
       description: data.description,
       dateDays: parseISO(data.date),
@@ -306,16 +344,52 @@ export default function Component() {
         return null;
     }
   };
-  console.log("TART", selectedTaskData);
+
+  const handleChange = (value: any) => {
+    setSelectedCategory(value);
+  };
+  const handleChangeStatus = (value: any) => {
+    setStatus(value);
+  };
 
   return (
-    <div className="flex min-h-screen flex-col items-center p-4">
+    <div className="flex max-h-48 min-h-screen flex-col items-center overflow-scroll p-4">
       <div className="flex w-full items-end"></div>
       <div></div>
       <h1 className="text-xl font-bold">Daily Task</h1>
       <div></div>
       <div className="flex w-full items-center justify-between gap-4 text-xs">
-        <div></div>
+        <div className="flex items-center justify-center gap-2">
+          <Label>Category:</Label>
+          <Select value={selectCategory} onValueChange={handleChange}>
+            <SelectTrigger className="w-[130px]">
+              <SelectValue placeholder="Select a fruit" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                <SelectLabel>Select Category</SelectLabel>
+                <SelectItem value="education">Education</SelectItem>
+                <SelectItem value="work">Work</SelectItem>
+                <SelectItem value="both">Both</SelectItem>
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+
+          <Label>Status:</Label>
+          <Select value={status} onValueChange={handleChangeStatus}>
+            <SelectTrigger className="w-[130px]">
+              <SelectValue placeholder="Select a fruit" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                <SelectLabel>Select Status</SelectLabel>
+                <SelectItem value="done">Completed</SelectItem>
+                <SelectItem value={"pending"}>Pending</SelectItem>
+                <SelectItem value="both">Both</SelectItem>
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+        </div>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
             <Button size="sm">Add new task</Button>
@@ -491,13 +565,13 @@ export default function Component() {
                     type="button"
                     variant="outline"
                     size="sm"
-                    className="mt-2"
+                    className="ml-2 mt-2"
                     onClick={() => append({ subtaskName: "", status: false })}
                   >
                     Add Subtask
                   </Button>
                 </div>
-                <Button type="submit">Add Task</Button>
+                <Button type="submit">Add Tasksss</Button>
               </form>
             </Form>
           </DialogContent>
@@ -931,3 +1005,8 @@ export default function Component() {
     </div>
   );
 }
+
+// DATABASE_URL =
+//   "postgresql://postgres.skymivevtbmtmqpefilq:lCc3aG9YIoRIGFAx@aws-0-ap-southeast-1.pooler.supabase.com:6543/postgres";
+// DIRECT_URL =
+//   "postgresql://postgres.skymivevtbmtmqpefilq:lCc3aG9YIoRIGFAx@aws-0-ap-southeast-1.pooler.supabase.com:5432/postgres";

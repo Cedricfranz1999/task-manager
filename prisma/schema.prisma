@@ -1,49 +1,57 @@
 generator client {
-    provider = "prisma-client-js"
+  provider = "prisma-client-js"
 }
 
 datasource db {
-    provider = "postgresql"
-    url      = env("DATABASE_URL")
-    directUrl = env("DIRECT_URL")
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
-// Define the Category enum
-
-
 model Post {
-    id        Int      @id @default(autoincrement())
-    name      String
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
+  id        Int      @id @default(autoincrement())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-    @@index([name])
+  @@index([name])
 }
 
 model Task {
-    id            Int       @id @default(autoincrement())
-    taskname      String
-    Description   String?
-    Date          DateTime?
-    startDuration DateTime
-    endDuration   DateTime
-    status        Boolean   @default(false)
-    subtasks      SubTask[]
-    category      Category   @default(education)
-    updatedAt     DateTime   @updatedAt @default(now())
-
+  id            Int       @id @default(autoincrement())
+  taskname      String
+  Description   String?
+  Date          DateTime?
+  startDuration DateTime
+  endDuration   DateTime
+  status        Boolean   @default(false)
+  subtasks      SubTask[]
+  category      Category   @default(education)
+  updatedAt     DateTime   @updatedAt @default(now())
+  userId        Int?       // Foreign key for User
+  user          User?      @relation(fields: [userId], references: [id])
 }
 
-
 model SubTask {
-    id          Int      @id @default(autoincrement())
-    subtaskName String
-    taskId      Int?
-    task        Task?    @relation(fields: [taskId], references: [id])
-    status      Boolean @default(false)
+  id          Int      @id @default(autoincrement())
+  subtaskName String
+  taskId      Int?
+  task        Task?    @relation(fields: [taskId], references: [id])
+  status      Boolean @default(false)
+}
+
+model User {
+  id          Int      @id @default(autoincrement())
+  name        String
+  age         Int
+  dateOfBirth DateTime
+  phoneNumber String
+  email       String   @unique
+  password    String?
+  tasks       Task[]   // One-to-many relation with Task
 }
 
 enum Category {
-    education
-    work
+  education
+  work
 }

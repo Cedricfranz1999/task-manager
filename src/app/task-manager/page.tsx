@@ -13,9 +13,11 @@ import {
   X,
 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 export default function TaskMasterLanding() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
     const handleScroll = (e: Event) => {
@@ -44,8 +46,15 @@ export default function TaskMasterLanding() {
 
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
 
+  const navigateToInstruction = () => {
+    const element = document.querySelector("#how-it-works");
+    if (element) {
+      element.scrollIntoView({ behavior: "smooth" });
+    }
+  };
+
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex min-h-screen flex-col items-center bg-blue-100">
       <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container flex h-14 items-center">
           <Link className="mr-6 flex items-center justify-center" href="#">
@@ -109,8 +118,14 @@ export default function TaskMasterLanding() {
                 </p>
               </div>
               <div className="space-x-4">
-                <Button size="lg">Get Started</Button>
-                <Button size="lg" variant="outline">
+                <Button size="lg" onClick={() => router.push("sign-in")}>
+                  Get Started
+                </Button>
+                <Button
+                  size="lg"
+                  variant="outline"
+                  onClick={navigateToInstruction}
+                >
                   Learn More
                 </Button>
               </div>
@@ -119,9 +134,9 @@ export default function TaskMasterLanding() {
         </section>
         <section
           id="features"
-          className="w-full bg-gray-100 py-12 dark:bg-gray-800 md:py-24 lg:py-32"
+          className="w-full bg-gray-50 py-12 dark:bg-gray-800 md:py-24 lg:py-32"
         >
-          <div className="container px-4 md:px-6">
+          <div className="px-4 md:px-6">
             <h2 className="mb-8 text-center text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">
               Key Features
             </h2>
@@ -157,7 +172,7 @@ export default function TaskMasterLanding() {
           </div>
         </section>
         <section id="how-it-works" className="w-full py-12 md:py-24 lg:py-32">
-          <div className="container px-4 md:px-6">
+          <div className="container px-4 md:px-6" id="instruction">
             <h2 className="mb-8 text-center text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">
               How It Works
             </h2>
@@ -194,7 +209,7 @@ export default function TaskMasterLanding() {
         </section>
         <section
           id="calendar"
-          className="w-full bg-gray-100 py-12 dark:bg-gray-800 md:py-24 lg:py-32"
+          className="w-full bg-gray-50 py-12 dark:bg-gray-800 md:py-24 lg:py-32"
         >
           <div className="container px-4 md:px-6">
             <h2 className="mb-8 text-center text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">
@@ -253,9 +268,9 @@ export default function TaskMasterLanding() {
               <Card>
                 <CardContent className="flex flex-col items-center p-6">
                   <img
-                    src="/placeholder.svg?height=100&width=100"
-                    alt="John Doe"
-                    className="mb-4 rounded-full"
+                    src="image1.jpeg"
+                    alt="image1.jpeg"
+                    className="mb-4 h-40 w-40 rounded-full"
                   />
                   <p className="mb-2 text-center text-sm text-gray-500 dark:text-gray-400">
                     TaskMaster has revolutionized how I manage my work tasks.
@@ -270,9 +285,9 @@ export default function TaskMasterLanding() {
               <Card>
                 <CardContent className="flex flex-col items-center p-6">
                   <img
-                    src="/placeholder.svg?height=100&width=100"
+                    src="image4.jpeg"
                     alt="Jane Smith"
-                    className="mb-4 rounded-full"
+                    className="mb-4 h-40 w-40 rounded-full"
                   />
                   <p className="mb-2 text-center text-sm text-gray-500 dark:text-gray-400">
                     As a student, TaskMaster helps me balance my studies and
@@ -287,9 +302,9 @@ export default function TaskMasterLanding() {
               <Card>
                 <CardContent className="flex flex-col items-center p-6">
                   <img
-                    src="/placeholder.svg?height=100&width=100"
+                    src="image3.jpeg"
                     alt="Alex Johnson"
-                    className="mb-4 rounded-full"
+                    className="mb-4 h-40 w-40 rounded-full"
                   />
                   <p className="mb-2 text-center text-sm text-gray-500 dark:text-gray-400">
                     The analytics feature has helped me identify and improve my

@@ -52,6 +52,16 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
+import { useRouter } from "next/navigation";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 dayjs.extend(isoWeek);
 
@@ -121,6 +131,18 @@ export default function Component() {
 
   const [selectedTaskData, setSelectedTaskData] = useState<Task | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [selectCategory, setSelectedCategory] = useState<
+    "both" | "education" | "work"
+  >("both");
+
+  const [status, setStatus] = useState<"both" | "done" | "pending">("both");
+  const router = useRouter();
+  const storedEmail = localStorage.getItem("email");
+  const storedPassword = localStorage.getItem("password");
+
+  if (!storedEmail && !storedPassword) {
+    router.push("/sign-in");
+  }
 
   const form = useForm<TaskFormData>({
     defaultValues: {
@@ -146,10 +168,21 @@ export default function Component() {
     };
   });
 
-  const { data, refetch } = api.Task.getTask.useQuery({
-    selectedDate: selectedDate ? selectedDate?.date : undefined,
+  const { data: userData } = api.Auth.getAllUser.useQuery({
+    email: storedEmail || "",
   });
 
+  const { data, refetch } = api.Task.getTask.useQuery(
+    {
+      selectedDate: selectedDate?.date,
+      userId: userData?.[0]?.id,
+      category: selectCategory,
+      status: status,
+    },
+    {
+      enabled: Boolean(userData?.length),
+    },
+  );
   const addTask = api.Task.addTask.useMutation({
     onSuccess: async () => {
       toast({
@@ -273,6 +306,7 @@ export default function Component() {
     endDuration.setHours(endDuration.getHours() - hoursToSubtract);
 
     await addTask.mutateAsync({
+      userId: userData?.[0]?.id,
       TaskId: Number(selectedTaskData.id),
       name: selectedTaskData.taskName,
       description: selectedTaskData.description,
@@ -303,15 +337,50 @@ export default function Component() {
         return null;
     }
   };
-  console.log("TART", selectedTaskData);
+  const handleChange = (value: any) => {
+    setSelectedCategory(value);
+  };
+  const handleChangeStatus = (value: any) => {
+    setStatus(value);
+  };
 
   return (
-    <div className="flex min-h-screen flex-col items-center p-4">
+    <div className="flex max-h-[1000px] min-h-screen flex-col items-center overflow-scroll p-4">
       <div className="flex w-full items-end"></div>
       <div></div>
       <h1 className="text-xl font-bold">Task List</h1>
       <div className="flex w-full items-center justify-between gap-4 text-xs">
-        <div></div>
+        <div className="flex items-center justify-center gap-2">
+          <Label>Category:</Label>
+          <Select value={selectCategory} onValueChange={handleChange}>
+            <SelectTrigger className="w-[130px]">
+              <SelectValue placeholder="Select a fruit" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                <SelectLabel>Select Category</SelectLabel>
+                <SelectItem value="education">Education</SelectItem>
+                <SelectItem value="work">Work</SelectItem>
+                <SelectItem value="both">Both</SelectItem>
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+
+          <Label>Status:</Label>
+          <Select value={status} onValueChange={handleChangeStatus}>
+            <SelectTrigger className="w-[130px]">
+              <SelectValue placeholder="Select a fruit" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                <SelectLabel>Select Status</SelectLabel>
+                <SelectItem value="done">Done</SelectItem>
+                <SelectItem value={"pending"}>Pending</SelectItem>
+                <SelectItem value="both">Both</SelectItem>
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+        </div>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
             <Button size="sm">Add new task</Button>
@@ -587,36 +656,31 @@ export default function Component() {
       <div
         className={`${activeTab ? "hidden" : ""} mt-10 h-full w-full rounded-md bg-blue-100`}
       >
-        {tasks.map((task, index, allTasks) => {
-          // eslint-disable-next-line react-hooks/rules-of-hooks
+        {(() => {
+          // Parse and sort tasks only once
           const parseDate = (dateInput: string | Date): Date => {
             if (dateInput instanceof Date) {
               return dateInput;
             }
-            // Try parsing as ISO string
             const isoDate = parseISO(dateInput);
             if (!isNaN(isoDate.getTime())) {
               return isoDate;
             }
-            // Try parsing as "MM/DD/YYYY" format
             const parsedDate = parse(dateInput, "MM/dd/yyyy", new Date());
             if (!isNaN(parsedDate.getTime())) {
               return parsedDate;
             }
-            // If all else fails, return current date
             console.error(`Invalid date format: ${dateInput}`);
             return new Date();
           };
 
-          // Sort tasks by date
           const sortedTasks = [...tasks].sort(
             (a, b) => parseDate(a.Date).getTime() - parseDate(b.Date).getTime(),
           );
 
-          // Group tasks by date
-          // eslint-disable-next-line @typescript-eslint/consistent-indexed-object-style, @typescript-eslint/no-redundant-type-constituents
-          const groupedTasks: { [key: string]: Task[] | any } = {};
+          const groupedTasks: { [key: string]: Task[] } = {};
 
+          // Group tasks by date
           sortedTasks.forEach((task) => {
             const dateKey = format(parseDate(task.Date), "yyyy-MM-dd");
             if (!groupedTasks[dateKey]) {
@@ -625,11 +689,9 @@ export default function Component() {
             groupedTasks[dateKey].push(task);
           });
 
-          // Convert object to array of entries
-          const sortedAndGroupedTasks = Object.entries(groupedTasks);
-          sortedAndGroupedTasks.forEach(([date, tasks]) => {
-            tasks.sort((a: any, b: any) => {
-              // Convert startDuration to 24-hour time format for correct sorting
+          // Sort tasks by startDuration within each group
+          Object.entries(groupedTasks).forEach(([date, tasks]) => {
+            tasks.sort((a, b) => {
               const convertTo24HourFormat = (time: string) => {
                 const [timeString, modifier] = time.split(" ");
                 let [hours, minutes] = timeString.split(":").map(Number);
@@ -643,13 +705,13 @@ export default function Component() {
               const timeA = convertTo24HourFormat(a.startDuration);
               const timeB = convertTo24HourFormat(b.startDuration);
 
-              return timeA.localeCompare(timeB); // Sort by startDuration (ascending order)
+              return timeA.localeCompare(timeB);
             });
           });
 
-          console.log("555", sortedAndGroupedTasks);
+          const sortedAndGroupedTasks = Object.entries(groupedTasks);
+
           return (
-            // eslint-disable-next-line react/jsx-key
             <div className="flex h-screen w-full flex-col items-start justify-start gap-5">
               <ScrollArea className="h-screen w-full">
                 <div className="container mx-auto space-y-6 p-4">
@@ -662,7 +724,7 @@ export default function Component() {
                         </CardTitle>
                       </CardHeader>
                       <CardContent className="space-y-4">
-                        {tasks.map((task: any) => (
+                        {tasks.map((task) => (
                           <Card
                             key={task.id}
                             className="cursor-pointer bg-secondary"
@@ -691,28 +753,6 @@ export default function Component() {
                               <div className="text-sm text-muted-foreground">
                                 {task.startDuration} - {task.endDuration}
                               </div>
-                              {task.subtasks && task.subtasks.length > 0 && (
-                                <div className="space-y-2">
-                                  <h4 className="font-semibold">Subtasks:</h4>
-                                  {task.subtasks.map((subtask: any) => (
-                                    <div
-                                      key={subtask.id}
-                                      className="flex items-center space-x-2"
-                                    >
-                                      <Checkbox
-                                        id={`subtask-${subtask.id}`}
-                                        checked={subtask.status}
-                                      />
-                                      <label
-                                        htmlFor={`subtask-${subtask.id}`}
-                                        className="text-sm"
-                                      >
-                                        {subtask.subtaskName}
-                                      </label>
-                                    </div>
-                                  ))}
-                                </div>
-                              )}
                             </CardContent>
                           </Card>
                         ))}
@@ -723,7 +763,7 @@ export default function Component() {
               </ScrollArea>
             </div>
           );
-        })}
+        })()}
       </div>
 
       <AlertDialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>

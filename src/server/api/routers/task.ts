@@ -7,22 +7,39 @@ export const task_router = createTRPCRouter({
     .input(
       z.object({
         selectedDate: z.date().optional().nullable(),
+        userId: z.number().optional(),
+        category: z.enum(["education", "work", "both"]),
+        status: z.enum(["done", "pending", "both"]),
       }),
     )
     .query(async ({ ctx, input }) => {
-      console.log("Selected Date:", input.selectedDate);
+      // Category condition
+      const categoryCondition =
+        input.category === "both" ? {} : { category: input.category };
 
-      // If no selectedDate is provided, return all tasks
+      // Status condition
+      let statusCondition = {};
+      if (input.status === "done") {
+        statusCondition = { status: true }; // Filter for tasks with status true
+      } else if (input.status === "pending") {
+        statusCondition = { status: false }; // Filter for tasks with status false
+      }
+      console.log("QQQQQ", input.userId);
+
       if (!input.selectedDate) {
         const allTasks = await ctx.db.task.findMany({
           include: {
             subtasks: true,
           },
+          where: {
+            userId: input.userId ?? 13,
+            ...categoryCondition,
+            ...statusCondition, // Apply the status condition
+          },
         });
         return allTasks;
       }
 
-      // Filter tasks based on the provided selectedDate
       const selectedDate = new Date(input.selectedDate);
       const year = selectedDate.getFullYear();
       const month = selectedDate.getMonth();
@@ -30,10 +47,14 @@ export const task_router = createTRPCRouter({
 
       const tasks = await ctx.db.task.findMany({
         where: {
+          userId: input.userId ?? 13,
+
           Date: {
             gte: new Date(year, month, day),
             lt: new Date(year, month, day + 1),
           },
+          ...categoryCondition,
+          ...statusCondition, // Apply the status condition
         },
         include: {
           subtasks: true,
@@ -49,6 +70,7 @@ export const task_router = createTRPCRouter({
   addTask: publicProcedure
     .input(
       z.object({
+        userId: z.number().optional(),
         TaskId: z.number().optional(),
         name: z.string(),
         description: z.string(),
@@ -76,6 +98,7 @@ export const task_router = createTRPCRouter({
         task = await ctx.db.task.update({
           where: { id: input.TaskId },
           data: {
+            userId: input.userId,
             taskname: input.name,
             Description: input.description,
             startDuration: input.startDuration,
@@ -145,6 +168,7 @@ export const task_router = createTRPCRouter({
       } else {
         task = await ctx.db.task.create({
           data: {
+            userId: input.userId,
             taskname: input.name,
             Description: input.description,
             Date: input.dateDays,
