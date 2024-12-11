@@ -709,7 +709,14 @@ export default function Component() {
             });
           });
 
-          const sortedAndGroupedTasks = Object.entries(groupedTasks);
+          const sortedAndGroupedTaskss = Object.entries(groupedTasks);
+
+          // Sort the array of entries based on the date string (in descending order)
+          const sortedAndGroupedTasks = sortedAndGroupedTaskss.sort((a, b) => {
+            const dateA = new Date(a[0]); // Convert string date to Date object
+            const dateB = new Date(b[0]); // Convert string date to Date object
+            return dateB.getTime() - dateA.getTime(); // Compare by timestamp (descending order)
+          });
 
           return (
             <div className="flex h-screen w-full flex-col items-start justify-start gap-5">

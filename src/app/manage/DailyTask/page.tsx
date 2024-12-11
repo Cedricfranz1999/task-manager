@@ -153,6 +153,9 @@ export default function Component() {
     monthDate: format(currentDay.toDate(), "MMM dd"),
     date: currentDay.toDate(),
   });
+  const { data: dataStatus } = api.Task.GetFeedback.useQuery({
+    dateDays: selectedDate?.date,
+  });
 
   const router = useRouter();
   const storedEmail = localStorage.getItem("email");
@@ -160,16 +163,32 @@ export default function Component() {
 
   if (!storedEmail && !storedPassword) {
     router.push("/sign-in");
+    // eslint-disable-next-line react-hooks/rules-of-hooks
   }
+  const [currentWeekStart, setCurrentWeekStart] = useState(
+    dayjs().startOf("week"),
+  );
 
-  const weekDays = Array.from({ length: 7 }, (_, index) => {
-    const day = startOfWeek.add(index, "day");
-    return {
-      day: day.format("ddd"),
-      monthDate: day.format("MMM D"),
-      date: day,
-    };
-  });
+  const getWeekDays = (startOfWeek: dayjs.Dayjs) => {
+    return Array.from({ length: 7 }, (_, index) => {
+      const day = startOfWeek.add(index, "day");
+      return {
+        day: day.format("ddd"),
+        monthDate: day.format("MMM D"),
+        date: day,
+      };
+    });
+  };
+
+  const weekDays = getWeekDays(currentWeekStart);
+
+  const handlePrevWeek = () => {
+    setCurrentWeekStart(currentWeekStart.subtract(7, "day"));
+  };
+
+  const handleNextWeek = () => {
+    setCurrentWeekStart(currentWeekStart.add(7, "day"));
+  };
 
   const { data: userData } = api.Auth.getAllUser.useQuery({
     email: storedEmail || "",
@@ -187,8 +206,6 @@ export default function Component() {
       enabled: Boolean(userData?.length),
     },
   );
-
-  console.log("DATA DATA ", data);
 
   const addTask = api.Task.addTask.useMutation({
     onSuccess: async () => {
@@ -390,70 +407,28 @@ export default function Component() {
             </SelectContent>
           </Select>
         </div>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button size="sm">Add new task</Button>
-          </DialogTrigger>
-          <DialogContent className="max-h-[600px] overflow-scroll sm:max-w-[425px]">
-            <DialogHeader>
-              <DialogTitle>Add New Task</DialogTitle>
-            </DialogHeader>
-            <Form {...form}>
-              <form
-                onSubmit={form.handleSubmit(onSubmit)}
-                className="space-y-4"
-              >
-                <FormField
-                  control={form.control}
-                  name="taskName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Task Name</FormLabel>
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="description"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Description</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          {...field}
-                          className="max-h-[200px] min-h-[100px] resize-none overflow-y-auto"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="date"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Date</FormLabel>
-                      <FormControl>
-                        <Input type="date" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <div className="flex items-center gap-4">
+        <div className="flex flex-col items-end justify-end">
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+              <Button size="sm">Add new task</Button>
+            </DialogTrigger>
+            <DialogContent className="max-h-[600px] overflow-scroll sm:max-w-[425px]">
+              <DialogHeader>
+                <DialogTitle>Add New Task</DialogTitle>
+              </DialogHeader>
+              <Form {...form}>
+                <form
+                  onSubmit={form.handleSubmit(onSubmit)}
+                  className="space-y-4"
+                >
                   <FormField
                     control={form.control}
-                    name="timeStart"
+                    name="taskName"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Start Duration</FormLabel>
+                        <FormLabel>Task Name</FormLabel>
                         <FormControl>
-                          <Input type="time" {...field} />
+                          <Input {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -461,126 +436,186 @@ export default function Component() {
                   />
                   <FormField
                     control={form.control}
-                    name="timeEnd"
+                    name="description"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>End Duration</FormLabel>
+                        <FormLabel>Description</FormLabel>
                         <FormControl>
-                          <Input type="time" {...field} />
+                          <Textarea
+                            {...field}
+                            className="max-h-[200px] min-h-[100px] resize-none overflow-y-auto"
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
-                </div>
-                <FormField
-                  control={form.control}
-                  name="category"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Category</FormLabel>
-                      <FormControl>
-                        <RadioGroup
-                          onValueChange={field.onChange}
-                          defaultValue={field.value}
-                          className="flex flex-col space-y-1"
-                        >
-                          <FormItem className="flex items-center space-x-3 space-y-0">
-                            <FormControl>
-                              <RadioGroupItem value="education" />
-                            </FormControl>
-                            <FormLabel className="font-normal">
-                              Education
-                            </FormLabel>
-                          </FormItem>
-                          <FormItem className="flex items-center space-x-3 space-y-0">
-                            <FormControl>
-                              <RadioGroupItem value="work" />
-                            </FormControl>
-                            <FormLabel className="font-normal">Work</FormLabel>
-                          </FormItem>
-                        </RadioGroup>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="taskStatus"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-                      <FormControl>
-                        <Checkbox
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                        />
-                      </FormControl>
-                      <div className="space-y-1 leading-none">
-                        <FormLabel>Task Status</FormLabel>
-                        <FormDescription>
-                          Mark as done if the task is completed.
-                        </FormDescription>
-                      </div>
-                    </FormItem>
-                  )}
-                />
-                <div>
-                  <FormLabel>Subtasks</FormLabel>
-
-                  {fields.map((field, index) => (
+                  <FormField
+                    control={form.control}
+                    name="date"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Date</FormLabel>
+                        <FormControl>
+                          <Input type="date" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <div className="flex items-center gap-4">
                     <FormField
-                      key={field.id}
                       control={form.control}
-                      name={`subtasks.${index}.subtaskName`}
+                      name="timeStart"
                       render={({ field }) => (
                         <FormItem>
-                          <div className="mt-2 flex items-center space-x-2">
-                            <FormControl>
-                              <Input {...field} placeholder="Subtask name" />
-                            </FormControl>
-                            <Checkbox
-                              checked={form.watch(`subtasks.${index}.status`)}
-                              onCheckedChange={(checked) => {
-                                form.setValue(
-                                  `subtasks.${index}.status`,
-                                  checked ? true : false,
-                                );
-                              }}
-                            />
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => remove(index)}
-                            >
-                              <X className="h-4 w-4" />
-                            </Button>
-                          </div>
+                          <FormLabel>Start Duration</FormLabel>
+                          <FormControl>
+                            <Input type="time" {...field} />
+                          </FormControl>
+                          <FormMessage />
                         </FormItem>
                       )}
                     />
-                  ))}
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="ml-2 mt-2"
-                    onClick={() => append({ subtaskName: "", status: false })}
-                  >
-                    Add Subtask
-                  </Button>
-                </div>
-                <Button type="submit">Add Tasksss</Button>
-              </form>
-            </Form>
-          </DialogContent>
-        </Dialog>
+                    <FormField
+                      control={form.control}
+                      name="timeEnd"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>End Duration</FormLabel>
+                          <FormControl>
+                            <Input type="time" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  <FormField
+                    control={form.control}
+                    name="category"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Category</FormLabel>
+                        <FormControl>
+                          <RadioGroup
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                            className="flex flex-col space-y-1"
+                          >
+                            <FormItem className="flex items-center space-x-3 space-y-0">
+                              <FormControl>
+                                <RadioGroupItem value="education" />
+                              </FormControl>
+                              <FormLabel className="font-normal">
+                                Education
+                              </FormLabel>
+                            </FormItem>
+                            <FormItem className="flex items-center space-x-3 space-y-0">
+                              <FormControl>
+                                <RadioGroupItem value="work" />
+                              </FormControl>
+                              <FormLabel className="font-normal">
+                                Work
+                              </FormLabel>
+                            </FormItem>
+                          </RadioGroup>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="taskStatus"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                        <div className="space-y-1 leading-none">
+                          <FormLabel>Task Status</FormLabel>
+                          <FormDescription>
+                            Mark as done if the task is completed.
+                          </FormDescription>
+                        </div>
+                      </FormItem>
+                    )}
+                  />
+                  <div>
+                    <FormLabel>Subtasks</FormLabel>
+
+                    {fields.map((field, index) => (
+                      <FormField
+                        key={field.id}
+                        control={form.control}
+                        name={`subtasks.${index}.subtaskName`}
+                        render={({ field }) => (
+                          <FormItem>
+                            <div className="mt-2 flex items-center space-x-2">
+                              <FormControl>
+                                <Input {...field} placeholder="Subtask name" />
+                              </FormControl>
+                              <Checkbox
+                                checked={form.watch(`subtasks.${index}.status`)}
+                                onCheckedChange={(checked) => {
+                                  form.setValue(
+                                    `subtasks.${index}.status`,
+                                    checked ? true : false,
+                                  );
+                                }}
+                              />
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => remove(index)}
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </FormItem>
+                        )}
+                      />
+                    ))}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="ml-2 mt-2"
+                      onClick={() => append({ subtaskName: "", status: false })}
+                    >
+                      Add Subtask
+                    </Button>
+                  </div>
+                  <Button type="submit">Add Tasksss</Button>
+                </form>
+              </Form>
+            </DialogContent>
+          </Dialog>
+          <p className="mt-10 text-xs">
+            Total Task:
+            <span className="mx-2 font-bold">{dataStatus?.totalTasks}</span>
+            Total Completed:
+            <span className="mx-2 font-bold">{dataStatus?.completedTasks}</span>
+            Total Percentage Done:
+            <span className="mx-2 font-bold">{dataStatus?.percentage}</span>
+          </p>
+        </div>
       </div>
       <div
         className={`${!activeTab ? "hidden" : ""} mt-10 w-full rounded-md bg-blue-100 p-4`}
       >
         <div className="mb-1 flex w-full max-w-full items-end justify-between rounded-lg px-6 py-2 text-sm shadow-lg sm:px-32">
+          <button
+            className="rounded-full bg-blue-200 p-2 hover:bg-gray-300"
+            onClick={handlePrevWeek}
+          >
+            &larr; {/* Left Arrow */}
+          </button>
           {weekDays.map((data) => (
             <div
               key={data.monthDate}
@@ -613,6 +648,12 @@ export default function Component() {
               </div>
             </div>
           ))}
+          <button
+            className="rounded-full bg-blue-200 p-2 hover:bg-gray-300"
+            onClick={handleNextWeek}
+          >
+            &rarr;
+          </button>
         </div>
 
         <div className="w-full max-w-full rounded-lg bg-white p-6 shadow-lg">
@@ -1005,8 +1046,3 @@ export default function Component() {
     </div>
   );
 }
-
-// DATABASE_URL =
-//   "postgresql://postgres.skymivevtbmtmqpefilq:lCc3aG9YIoRIGFAx@aws-0-ap-southeast-1.pooler.supabase.com:6543/postgres";
-// DIRECT_URL =
-//   "postgresql://postgres.skymivevtbmtmqpefilq:lCc3aG9YIoRIGFAx@aws-0-ap-southeast-1.pooler.supabase.com:5432/postgres";

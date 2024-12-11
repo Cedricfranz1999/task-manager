@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { createTRPCRouter, publicProcedure } from "@/server/api/trpc";
 import { Category } from "@prisma/client";
+import dayjs from "dayjs";
 
 export const task_router = createTRPCRouter({
   getTask: publicProcedure
@@ -13,18 +14,16 @@ export const task_router = createTRPCRouter({
       }),
     )
     .query(async ({ ctx, input }) => {
-      // Category condition
       const categoryCondition =
         input.category === "both" ? {} : { category: input.category };
 
       // Status condition
       let statusCondition = {};
       if (input.status === "done") {
-        statusCondition = { status: true }; // Filter for tasks with status true
+        statusCondition = { status: true };
       } else if (input.status === "pending") {
-        statusCondition = { status: false }; // Filter for tasks with status false
+        statusCondition = { status: false };
       }
-      console.log("QQQQQ", input.userId);
 
       if (!input.selectedDate) {
         const allTasks = await ctx.db.task.findMany({
@@ -190,6 +189,54 @@ export const task_router = createTRPCRouter({
         }
       }
 
-      return task; // Return the created or updated task
+      return task;
+    }),
+  GetFeedback: publicProcedure
+    .input(
+      z.object({
+        dateDays: z.date().optional(),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      // If dateDays is not provided, default to the current date
+      const dateToUse = input.dateDays || new Date();
+
+      // Format the date as 'YYYY-MM-DD'
+      const selectedDate = dayjs(dateToUse).format("YYYY-MM-DD");
+
+      // Ensure that the time is treated as UTC by appending 'Z'
+      const startOfDay = new Date(`${selectedDate}T00:00:00Z`);
+      const endOfDay = new Date(`${selectedDate}T23:59:59Z`);
+
+      // Count the total tasks for the selected day
+      const totalTasks = await ctx.db.task.count({
+        where: {
+          Date: {
+            gte: startOfDay, // Start of the day in UTC
+            lt: endOfDay, // End of the day in UTC
+          },
+        },
+      });
+
+      // Count the number of completed tasks for the selected day
+      const completedTasks = await ctx.db.task.count({
+        where: {
+          status: true, // Only count completed tasks
+          Date: {
+            gte: startOfDay, // Start of the day in UTC
+            lt: endOfDay, // End of the day in UTC
+          },
+        },
+      });
+
+      // Calculate the percentage of completed tasks
+      const percentage =
+        totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
+
+      return {
+        totalTasks,
+        completedTasks,
+        percentage,
+      };
     }),
 });
