@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { number, z } from "zod";
 import { createTRPCRouter, publicProcedure } from "@/server/api/trpc";
 import { Category } from "@prisma/client";
 import dayjs from "dayjs";
@@ -195,6 +195,7 @@ export const task_router = createTRPCRouter({
     .input(
       z.object({
         dateDays: z.date().optional(),
+        userId: z.number(),
       }),
     )
     .query(async ({ ctx, input }) => {
@@ -214,6 +215,8 @@ export const task_router = createTRPCRouter({
       // Count the total tasks for the delayed day
       const totalTasks = await ctx.db.task.count({
         where: {
+          userId: input.userId,
+
           Date: {
             gte: startOfDay, // Start of the day in UTC
             lt: endOfDay, // End of the day in UTC
@@ -224,6 +227,7 @@ export const task_router = createTRPCRouter({
       // Count the number of completed tasks for the delayed day
       const completedTasks = await ctx.db.task.count({
         where: {
+          userId: input.userId,
           status: true, // Only count completed tasks
           Date: {
             gte: startOfDay, // Start of the day in UTC

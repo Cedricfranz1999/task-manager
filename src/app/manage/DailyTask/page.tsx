@@ -153,13 +153,6 @@ export default function Component() {
     monthDate: format(currentDay.toDate(), "MMM dd"),
     date: currentDay.toDate(),
   });
-  const { data: dataStatus, refetch: refetchFeedback } =
-    api.Task.GetFeedback.useQuery({
-      dateDays: selectedDate?.date,
-    });
-
-  console.log("DATE123", selectedDate);
-  console.log("FEEDBACK", dataStatus);
 
   const router = useRouter();
   const [storedEmail, setStoredEmail] = useState<string | null>(null);
@@ -169,10 +162,6 @@ export default function Component() {
     setStoredPassword(localStorage.getItem("password"));
   }, []);
 
-  if (!storedEmail && !storedPassword) {
-    router.push("/sign-in");
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-  }
   const [currentWeekStart, setCurrentWeekStart] = useState(
     dayjs().startOf("week"),
   );
@@ -205,7 +194,6 @@ export default function Component() {
   const { data: userData } = api.Auth.getAllUser.useQuery({
     email: storedEmail || "",
   });
-  console.log("ASDAS", userData?.[0]?.id);
 
   const { data, refetch } = api.Task.getTask.useQuery(
     {
@@ -218,6 +206,16 @@ export default function Component() {
       enabled: Boolean(userData?.length),
     },
   );
+  const { data: dataStatus, refetch: refetchFeedback } =
+    api.Task.GetFeedback.useQuery(
+      {
+        dateDays: selectedDate?.date,
+        userId: userData?.[0]?.id ?? 0,
+      },
+      {
+        enabled: Boolean(userData?.[0]?.id),
+      },
+    );
 
   const addTask = api.Task.addTask.useMutation({
     onSuccess: async () => {
@@ -225,6 +223,7 @@ export default function Component() {
         title: "Successfully added new task",
       });
       await refetch();
+      refetchFeedback();
     },
   });
 
@@ -381,6 +380,9 @@ export default function Component() {
     setStatus(value);
   };
 
+  if (!storedEmail) {
+    router.push("/sign-in");
+  }
   return (
     <div className="flex max-h-48 min-h-screen flex-col items-center overflow-scroll p-4">
       <div className="flex w-full items-end"></div>

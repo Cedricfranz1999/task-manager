@@ -32,7 +32,7 @@ export const auth_router = createTRPCRouter({
   getAllUser: publicProcedure
     .input(
       z.object({
-        email: z.string().optional(),
+        email: z.string().optional().nullable(),
       }),
     )
     .query(async ({ ctx, input }) => {

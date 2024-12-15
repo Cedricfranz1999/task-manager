@@ -144,10 +144,6 @@ export default function Component() {
     setStoredPassword(localStorage.getItem("password"));
   }, []);
 
-  if (!storedEmail && !storedPassword) {
-    router.push("/sign-in");
-  }
-
   const form = useForm<TaskFormData>({
     defaultValues: {
       subtasks: [],
