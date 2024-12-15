@@ -198,17 +198,20 @@ export const task_router = createTRPCRouter({
       }),
     )
     .query(async ({ ctx, input }) => {
-      // If dateDays is not provided, default to the current date
-      const dateToUse = input.dateDays || new Date();
+      // Determine the base date (use provided date or current date)
+      const baseDate = input.dateDays ? new Date(input.dateDays) : new Date();
 
-      // Format the date as 'YYYY-MM-DD'
-      const selectedDate = dayjs(dateToUse).format("YYYY-MM-DD");
+      // Subtract 8 hours from the base date
+      const delayedDate = new Date(baseDate.getTime() - 8 * 60 * 60 * 1000);
 
-      // Ensure that the time is treated as UTC by appending 'Z'
+      // Format the delayed date as 'YYYY-MM-DD'
+      const selectedDate = dayjs(delayedDate).format("YYYY-MM-DD");
+
+      // Calculate the UTC start and end of the delayed day
       const startOfDay = new Date(`${selectedDate}T00:00:00Z`);
       const endOfDay = new Date(`${selectedDate}T23:59:59Z`);
 
-      // Count the total tasks for the selected day
+      // Count the total tasks for the delayed day
       const totalTasks = await ctx.db.task.count({
         where: {
           Date: {
@@ -218,7 +221,7 @@ export const task_router = createTRPCRouter({
         },
       });
 
-      // Count the number of completed tasks for the selected day
+      // Count the number of completed tasks for the delayed day
       const completedTasks = await ctx.db.task.count({
         where: {
           status: true, // Only count completed tasks

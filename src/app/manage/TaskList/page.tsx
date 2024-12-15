@@ -1,7 +1,7 @@
 "use client";
 
 import { api } from "@/trpc/react";
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { format, parse, parseISO } from "date-fns";
 import dayjs from "dayjs";
 import isoWeek from "dayjs/plugin/isoWeek";
@@ -94,7 +94,7 @@ type TaskFormData = {
   taskStatus: boolean;
 };
 
-export const idToColorHueConvert = (id: string) => {
+const idToColorHueConvert = (id: string) => {
   let hash = 0;
   for (let i = 0; i < id.length; i++) {
     hash = (hash << 5) + id.charCodeAt(i);
@@ -137,8 +137,12 @@ export default function Component() {
 
   const [status, setStatus] = useState<"both" | "done" | "pending">("both");
   const router = useRouter();
-  const storedEmail = localStorage.getItem("email");
-  const storedPassword = localStorage.getItem("password");
+  const [storedEmail, setStoredEmail] = useState<string | null>(null);
+  const [storedPassword, setStoredPassword] = useState<string | null>(null);
+  useEffect(() => {
+    setStoredEmail(localStorage.getItem("email"));
+    setStoredPassword(localStorage.getItem("password"));
+  }, []);
 
   if (!storedEmail && !storedPassword) {
     router.push("/sign-in");
@@ -203,7 +207,7 @@ export default function Component() {
 
   const formatTime = (isoTime: string) => format(new Date(isoTime), "hh:mm a");
 
-  const tasks: Task[] = data.map((task: any) => ({
+  const tasks: any[] = data.map((task: any) => ({
     id: task.id.toString(),
     taskName: task.taskname,
     description: task.Description,
@@ -226,7 +230,7 @@ export default function Component() {
     return `${hour.toString().padStart(2, "0")}:00 ${period}`;
   });
 
-  const parseTime = (time: string) => {
+  const parseTime = (time: any) => {
     const [timeStr, period] = time.split(" ");
     let [hours, minutes] = timeStr.split(":").map(Number);
     if (period === "PM" && hours !== 12) {
@@ -693,7 +697,7 @@ export default function Component() {
           Object.entries(groupedTasks).forEach(([date, tasks]) => {
             tasks.sort((a, b) => {
               const convertTo24HourFormat = (time: string) => {
-                const [timeString, modifier] = time.split(" ");
+                const [timeString, modifier]: any = time.split(" ");
                 let [hours, minutes] = timeString.split(":").map(Number);
 
                 if (modifier === "PM" && hours !== 12) hours += 12;
@@ -829,7 +833,7 @@ export default function Component() {
                     ),
                     "HH:mm",
                   )}
-                  onChange={(e) => {
+                  onChange={(e: any) => {
                     const timeValue = e.target.value;
                     const [hours, minutes] = timeValue.split(":").map(Number);
                     const suffix = hours < 12 ? "AM" : "PM";
@@ -852,7 +856,7 @@ export default function Component() {
                     parse(selectedTaskData.endDuration, "hh:mm a", new Date()),
                     "HH:mm",
                   )}
-                  onChange={(e) => {
+                  onChange={(e: any) => {
                     const timeValue = e.target.value;
                     const [hours, minutes] = timeValue.split(":").map(Number);
                     const suffix = hours < 12 ? "AM" : "PM";

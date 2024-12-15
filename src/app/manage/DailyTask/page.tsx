@@ -94,7 +94,7 @@ type TaskFormData = {
   taskStatus: boolean;
 };
 
-export const idToColorHueConvert = (id: string) => {
+const idToColorHueConvert = (id: string) => {
   let hash = 0;
   for (let i = 0; i < id.length; i++) {
     hash = (hash << 5) + id.charCodeAt(i);
@@ -153,13 +153,21 @@ export default function Component() {
     monthDate: format(currentDay.toDate(), "MMM dd"),
     date: currentDay.toDate(),
   });
-  const { data: dataStatus } = api.Task.GetFeedback.useQuery({
-    dateDays: selectedDate?.date,
-  });
+  const { data: dataStatus, refetch: refetchFeedback } =
+    api.Task.GetFeedback.useQuery({
+      dateDays: selectedDate?.date,
+    });
+
+  console.log("DATE123", selectedDate);
+  console.log("FEEDBACK", dataStatus);
 
   const router = useRouter();
-  const storedEmail = localStorage.getItem("email");
-  const storedPassword = localStorage.getItem("password");
+  const [storedEmail, setStoredEmail] = useState<string | null>(null);
+  const [storedPassword, setStoredPassword] = useState<string | null>(null);
+  useEffect(() => {
+    setStoredEmail(localStorage.getItem("email"));
+    setStoredPassword(localStorage.getItem("password"));
+  }, []);
 
   if (!storedEmail && !storedPassword) {
     router.push("/sign-in");
@@ -182,12 +190,16 @@ export default function Component() {
 
   const weekDays = getWeekDays(currentWeekStart);
 
-  const handlePrevWeek = () => {
+  const handlePrevWeek = async () => {
     setCurrentWeekStart(currentWeekStart.subtract(7, "day"));
+    refetch();
+    refetchFeedback();
   };
 
   const handleNextWeek = () => {
     setCurrentWeekStart(currentWeekStart.add(7, "day"));
+    refetch();
+    refetchFeedback();
   };
 
   const { data: userData } = api.Auth.getAllUser.useQuery({
@@ -227,7 +239,7 @@ export default function Component() {
 
   const formatTime = (isoTime: string) => format(new Date(isoTime), "hh:mm a");
 
-  const tasks: Task[] = data.map((task: any) => ({
+  const tasks: any[] = data.map((task: any) => ({
     id: task.id.toString(),
     taskName: task.taskname,
     description: task.Description,
@@ -250,7 +262,7 @@ export default function Component() {
     return `${hour.toString().padStart(2, "0")}:00 ${period}`;
   });
 
-  const parseTime = (time: string) => {
+  const parseTime = (time: any) => {
     const [timeStr, period] = time.split(" ");
     let [hours, minutes] = timeStr.split(":").map(Number);
     if (period === "PM" && hours !== 12) {
@@ -890,7 +902,7 @@ export default function Component() {
                     ),
                     "HH:mm",
                   )}
-                  onChange={(e) => {
+                  onChange={(e: any) => {
                     const timeValue = e.target.value;
                     const [hours, minutes] = timeValue.split(":").map(Number);
                     const suffix = hours < 12 ? "AM" : "PM";
@@ -913,7 +925,7 @@ export default function Component() {
                     parse(selectedTaskData.endDuration, "hh:mm a", new Date()),
                     "HH:mm",
                   )}
-                  onChange={(e) => {
+                  onChange={(e: any) => {
                     const timeValue = e.target.value;
                     const [hours, minutes] = timeValue.split(":").map(Number);
                     const suffix = hours < 12 ? "AM" : "PM";

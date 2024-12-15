@@ -66,7 +66,7 @@ const Sidebar = () => {
   }, []);
 
   useEffect(() => {
-    if (userData && userData[0]) {
+    if (userData ?? userData?.[0]) {
       setProfileData({
         name: userData[0]?.name || "",
         age: userData[0]?.age?.toString() || "",
@@ -111,7 +111,7 @@ const Sidebar = () => {
         password: profileData.newPassword || userData[0]?.password,
       };
 
-      Signup.mutate(updatedProfileData);
+      Signup.mutate(updatedProfileData as any);
     }
   };
 

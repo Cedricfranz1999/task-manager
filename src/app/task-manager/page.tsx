@@ -59,7 +59,7 @@ export default function TaskMasterLanding() {
         <div className="container flex h-14 items-center">
           <Link className="mr-6 flex items-center justify-center" href="#">
             <CheckCircle className="h-6 w-6 text-primary" />
-            <span className="ml-2 text-lg font-bold">TaskMaster</span>
+            <span className="ml-2 text-lg font-bold">Task Tracker</span>
           </Link>
           <nav
             className={`${isMenuOpen ? "flex" : "hidden"} absolute left-0 right-0 top-full flex-col space-y-2 bg-background p-4 md:static md:flex md:flex-row md:space-x-6 md:space-y-0`}
@@ -113,8 +113,8 @@ export default function TaskMasterLanding() {
                   Manage Your Tasks with Ease
                 </h1>
                 <p className="mx-auto max-w-[700px] text-gray-500 dark:text-gray-400 md:text-xl">
-                  TaskMaster helps you organize your work and education tasks in
-                  one place. Stay productive and never miss a deadline.
+                  Task Tracker helps you organize your work and education tasks
+                  in one place. Stay productive and never miss a deadline.
                 </p>
               </div>
               <div className="space-x-4">
@@ -201,7 +201,7 @@ export default function TaskMasterLanding() {
                 </div>
                 <h3 className="text-lg font-bold">Stay Organized</h3>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Let TaskMaster handle the rest
+                  Let Task Tracker handle the rest
                 </p>
               </div>
             </div>
@@ -273,7 +273,7 @@ export default function TaskMasterLanding() {
                     className="mb-4 h-40 w-40 rounded-full"
                   />
                   <p className="mb-2 text-center text-sm text-gray-500 dark:text-gray-400">
-                    TaskMaster has revolutionized how I manage my work tasks.
+                    Task Tracker has revolutionized how I manage my work tasks.
                     Highly recommended
                   </p>
                   <p className="font-bold">John Doe</p>
@@ -290,7 +290,7 @@ export default function TaskMasterLanding() {
                     className="mb-4 h-40 w-40 rounded-full"
                   />
                   <p className="mb-2 text-center text-sm text-gray-500 dark:text-gray-400">
-                    As a student, TaskMaster helps me balance my studies and
+                    As a student, Task Trackerhelps me balance my studies and
                     part-time job effortlessly.
                   </p>
                   <p className="font-bold">Jane Smith</p>
@@ -327,10 +327,10 @@ export default function TaskMasterLanding() {
             <div className="flex flex-col items-center space-y-4 text-center">
               <div className="space-y-2">
                 <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">
-                  About TaskMaster
+                  About Task Tracker
                 </h2>
                 <p className="mx-auto max-w-[700px] text-primary-foreground/80 md:text-xl">
-                  TaskMaster was born out of a passion for productivity and a
+                  Task Tracker was born out of a passion for productivity and a
                   desire to help people achieve more in their personal and
                   professional lives. Our team of dedicated developers and
                   productivity experts have created a tool that seamlessly
@@ -350,7 +350,7 @@ export default function TaskMasterLanding() {
       </main>
       <footer className="flex w-full shrink-0 flex-col items-center gap-2 border-t px-4 py-6 sm:flex-row md:px-6">
         <p className="text-xs text-gray-500 dark:text-gray-400">
-          © 2024 TaskMaster. All rights reserved.
+          © 2024 Task Tracker. All rights reserved.
         </p>
         <nav className="flex gap-4 sm:ml-auto sm:gap-6">
           <Link className="text-xs underline-offset-4 hover:underline" href="#">

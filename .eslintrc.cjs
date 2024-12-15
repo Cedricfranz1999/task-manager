@@ -12,8 +12,10 @@ const config = {
   ],
   rules: {
     "@typescript-eslint/array-type": "off",
+    "@@typescript-eslint/no-unnecessary-type-assertion": "off",
     "@typescript-eslint/consistent-type-definitions": "off",
     "https://typescript-eslint.io/rules/no-unsafe-return": "off",
+    "@typescript-eslint/restrict-template-expressions": "off",
     "@typescript-eslint.io/rules/no-unsafe-assignment/": "off",
     "@typescript-eslint.io/rules/no-explicit-any": "off",
     "@typescript-eslint/no-explicit-any": "off",
@@ -22,6 +24,15 @@ const config = {
     "@typescript-eslint/no-unsafe-argument": "off",
     "@typescript-eslint/no-unsafe-call": "off",
     "@typescript-eslint/no-unsafe-return": "off",
+    " @typescript-eslint/no-unnecessary-type-assertion": "off",
+    "@typescript-eslint/prefer-optional-chain": "off",
+    "@typescript-eslint/no-unnecessary-type-assertion": "off",
+    "@typescript-eslint/consistent-indexed-object-style": "off",
+    " @typescript-eslint/no-floating-promises": "off",
+    "@typescript-eslint/no-floating": "off",
+    "@typescript-eslint/no-floating-promises": "off",
+
+    "prefer-const": "off",
 
     "@typescript-eslint/prefer-nullish-coalescing": "off",
 

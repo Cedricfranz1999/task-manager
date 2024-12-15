@@ -82,7 +82,7 @@ export default function TaskManagerIntro() {
       <div className="w-full lg:w-1/2 lg:p-8">
         <div className="mx-auto max-w-3xl">
           <h1 className="mb-4 text-3xl font-bold text-primary sm:text-4xl lg:mb-6">
-            Welcome to TaskMaster
+            Welcome to Task Tracker
           </h1>
           <p className="mb-6 text-lg text-gray-600 sm:text-xl lg:mb-8">
             Streamline your productivity with our intuitive task management
@@ -150,7 +150,7 @@ export default function TaskManagerIntro() {
 
           <div className="rounded-lg bg-white p-4 shadow-md sm:p-6">
             <h2 className="mb-3 text-xl font-semibold sm:mb-4 sm:text-2xl">
-              Why Choose TaskMaster?
+              Why Choose Task Tracker?
             </h2>
             <ul className="list-inside list-disc space-y-1 text-gray-600 sm:space-y-2">
               <li className="text-sm sm:text-base">
@@ -184,7 +184,7 @@ export default function TaskManagerIntro() {
               <CardHeader>
                 <CardTitle>Create an account</CardTitle>
                 <CardDescription>
-                  Sign up for TaskMaster to get started
+                  Sign up for Task Tracker to get started
                 </CardDescription>
               </CardHeader>
               <CardContent>
